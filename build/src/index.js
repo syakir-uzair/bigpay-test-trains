@@ -1,124 +1,89 @@
 "use strict";
-class Node {
-    constructor(value) {
-        this.value = value;
-        this.left = null;
-        this.right = null;
-        this.parent = null;
-    }
-}
-class DestinationPriorityQueue {
+class MinHeap {
     constructor() {
-        this.root = null;
-        this.lastNode = null;
+        this.heap = [];
     }
-    insert(value) {
-        const newNode = new Node(value);
-        if (!this.root) {
-            this.root = newNode;
-            this.lastNode = newNode;
-        }
-        else {
-            const parent = this.findInsertPosition();
-            newNode.parent = parent;
-            if (parent) {
-                if (!parent.left) {
-                    parent.left = newNode;
-                }
-                else {
-                    parent.right = newNode;
-                }
-            }
-            this.lastNode = newNode;
-            this.bubbleUp(newNode);
-        }
+    // Helper Methods
+    getLeftChildIndex(parentIndex) {
+        return 2 * parentIndex + 1;
     }
-    bubbleUp(node) {
-        while (node.parent && node.value.distance < node.parent.value.distance) {
-            this.swap(node, node.parent);
-            node = node.parent;
-        }
+    getRightChildIndex(parentIndex) {
+        return 2 * parentIndex + 2;
     }
-    swap(node1, node2) {
-        [node1.value, node2.value] = [node2.value, node1.value];
+    getParentIndex(childIndex) {
+        return Math.floor((childIndex - 1) / 2);
     }
-    findInsertPosition() {
-        const queue = [this.root];
-        while (queue.length) {
-            const node = queue.shift();
-            if (node) {
-                if (!node.left || !node.right) {
-                    return node;
-                }
-                queue.push(node.left);
-                queue.push(node.right);
-            }
-        }
-        return null;
+    hasLeftChild(index) {
+        return this.getLeftChildIndex(index) < this.heap.length;
     }
-    extractMin() {
-        if (!this.root) {
+    hasRightChild(index) {
+        return this.getRightChildIndex(index) < this.heap.length;
+    }
+    hasParent(index) {
+        return this.getParentIndex(index) >= 0;
+    }
+    leftChild(index) {
+        return this.heap[this.getLeftChildIndex(index)];
+    }
+    rightChild(index) {
+        return this.heap[this.getRightChildIndex(index)];
+    }
+    parent(index) {
+        return this.heap[this.getParentIndex(index)];
+    }
+    // Functions to create Min Heap
+    swap(indexOne, indexTwo) {
+        const temp = this.heap[indexOne];
+        this.heap[indexOne] = this.heap[indexTwo];
+        this.heap[indexTwo] = temp;
+    }
+    peek() {
+        if (this.heap.length === 0) {
             return null;
         }
-        const minValue = this.root.value;
-        if (this.root === this.lastNode) {
-            this.root = null;
-            this.lastNode = null;
-        }
-        else if (this.lastNode) {
-            this.root.value = this.lastNode.value;
-            this.removeLastNode();
-            this.bubbleDown(this.root);
-        }
-        return minValue;
+        return this.heap[0];
     }
-    removeLastNode() {
-        const queue = [this.root];
-        let node = null;
-        let parent = null;
-        while (queue.length) {
-            node = queue.shift() || null;
-            if (node) {
-                if (node.left) {
-                    queue.push(node.left);
-                }
-                if (node.right) {
-                    queue.push(node.right);
-                }
-            }
-            if (queue.length) {
-                parent = node;
-            }
+    // Removing an element will remove the
+    // top element with highest priority then
+    // heapifyDown will be called
+    remove() {
+        if (this.heap.length === 0) {
+            return null;
         }
-        if (parent) {
-            if (parent.right === this.lastNode) {
-                parent.right = null;
-            }
-            else {
-                parent.left = null;
-            }
-        }
-        this.lastNode = parent;
+        const item = this.heap[0];
+        this.heap[0] = this.heap[this.heap.length - 1];
+        this.heap.pop();
+        this.heapifyDown();
+        return item;
     }
-    bubbleDown(node) {
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-            let smallest = node;
-            if (node.left && node.left.value.distance < smallest.value.distance) {
-                smallest = node.left;
+    add(item) {
+        this.heap.push(item);
+        this.heapifyUp();
+    }
+    heapifyUp() {
+        let index = this.heap.length - 1;
+        while (this.hasParent(index) &&
+            this.parent(index).distance > this.heap[index].distance) {
+            this.swap(this.getParentIndex(index), index);
+            index = this.getParentIndex(index);
+        }
+    }
+    heapifyDown() {
+        let index = 0;
+        while (this.hasLeftChild(index)) {
+            let smallerChildIndex = this.getLeftChildIndex(index);
+            if (this.hasRightChild(index) &&
+                this.rightChild(index).distance < this.leftChild(index).distance) {
+                smallerChildIndex = this.getRightChildIndex(index);
             }
-            if (node.right && node.right.value.distance < smallest.value.distance) {
-                smallest = node.right;
-            }
-            if (smallest === node) {
+            if (this.heap[index].distance < this.heap[smallerChildIndex].distance) {
                 break;
             }
-            this.swap(node, smallest);
-            node = smallest;
+            else {
+                this.swap(index, smallerChildIndex);
+            }
+            index = smallerChildIndex;
         }
-    }
-    isEmpty() {
-        return !this.root;
     }
 }
 class Graph {
@@ -135,7 +100,12 @@ class Graph {
             });
         }
         else {
-            this.adjList.set(from, []);
+            this.adjList.set(from, [
+                {
+                    to,
+                    distance,
+                },
+            ]);
         }
         if (tos) {
             tos.push({
@@ -143,36 +113,44 @@ class Graph {
                 distance,
             });
         }
-        if (!this.adjList.has(to)) {
-            this.adjList.set(to, []);
+        else {
+            this.adjList.set(to, [
+                {
+                    to: from,
+                    distance,
+                },
+            ]);
         }
     }
     dijkstra(start) {
         const distances = new Map();
-        const pq = new DestinationPriorityQueue();
+        const minHeap = new MinHeap();
         const visited = new Set();
-        this.adjList.forEach((_, node) => {
-            distances.set(node, Infinity);
+        this.adjList.forEach((to, from) => {
+            console.log(from, to);
+        });
+        this.adjList.forEach((_, to) => {
+            distances.set(to, Infinity);
         });
         distances.set(start, 0);
-        pq.insert({
+        minHeap.add({
             to: start,
             distance: 0,
         });
-        while (!pq.isEmpty()) {
-            const min = pq.extractMin();
+        while (minHeap.heap.length) {
+            const min = minHeap.remove();
             if (min) {
-                const { to: current, distance: currentDist } = min;
+                const { to: current, distance: currentDistance } = min;
                 if (visited.has(current)) {
                     continue;
                 }
                 visited.add(current);
                 const neighbors = this.adjList.get(current) || [];
                 for (const { to: next, distance } of neighbors) {
-                    const newDist = currentDist + distance;
-                    if (newDist < distances.get(next)) {
-                        distances.set(next, newDist);
-                        pq.insert({ to: next, distance: newDist });
+                    const newDistance = currentDistance + distance;
+                    if (newDistance < distances.get(next)) {
+                        distances.set(next, newDistance);
+                        minHeap.add({ to: next, distance: newDistance });
                     }
                 }
             }

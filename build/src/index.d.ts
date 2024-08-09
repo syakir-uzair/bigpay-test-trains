@@ -2,26 +2,24 @@ type Destination = {
     to: string;
     distance: number;
 };
-declare class Node {
-    value: Destination;
-    left: NullableNode;
-    right: NullableNode;
-    parent: NullableNode;
-    constructor(value: Destination);
-}
-type NullableNode = Node | null;
-declare class DestinationPriorityQueue {
-    root: NullableNode;
-    lastNode: NullableNode;
+declare class MinHeap {
+    heap: Destination[];
     constructor();
-    insert(value: Destination): void;
-    bubbleUp(node: Node): void;
-    swap(node1: Node, node2: Node): void;
-    findInsertPosition(): NullableNode;
-    extractMin(): Destination | null;
-    removeLastNode(): void;
-    bubbleDown(node: Node): void;
-    isEmpty(): boolean;
+    getLeftChildIndex(parentIndex: number): number;
+    getRightChildIndex(parentIndex: number): number;
+    getParentIndex(childIndex: number): number;
+    hasLeftChild(index: number): boolean;
+    hasRightChild(index: number): boolean;
+    hasParent(index: number): boolean;
+    leftChild(index: number): Destination;
+    rightChild(index: number): Destination;
+    parent(index: number): Destination;
+    swap(indexOne: number, indexTwo: number): void;
+    peek(): Destination | null;
+    remove(): Destination | null;
+    add(item: Destination): void;
+    heapifyUp(): void;
+    heapifyDown(): void;
 }
 declare class Graph {
     adjList: Map<string, Destination[]>;

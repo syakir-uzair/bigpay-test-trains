@@ -3,155 +3,99 @@ type Destination = {
   distance: number;
 };
 
-class Node {
-  public value: Destination;
-  public left: NullableNode;
-  public right: NullableNode;
-  public parent: NullableNode;
-
-  constructor(value: Destination) {
-    this.value = value;
-    this.left = null;
-    this.right = null;
-    this.parent = null;
-  }
-}
-
-type NullableNode = Node | null;
-
-class DestinationPriorityQueue {
-  public root: NullableNode;
-  public lastNode: NullableNode;
+class MinHeap {
+  public heap: Destination[];
 
   constructor() {
-    this.root = null;
-    this.lastNode = null;
+    this.heap = [];
   }
 
-  insert(value: Destination) {
-    const newNode = new Node(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      this.lastNode = newNode;
-    } else {
-      const parent = this.findInsertPosition();
-      newNode.parent = parent;
-
-      if (parent) {
-        if (!parent.left) {
-          parent.left = newNode;
-        } else {
-          parent.right = newNode;
-        }
-      }
-
-      this.lastNode = newNode;
-      this.bubbleUp(newNode);
-    }
+  // Helper Methods
+  getLeftChildIndex(parentIndex: number) {
+    return 2 * parentIndex + 1;
+  }
+  getRightChildIndex(parentIndex: number) {
+    return 2 * parentIndex + 2;
+  }
+  getParentIndex(childIndex: number) {
+    return Math.floor((childIndex - 1) / 2);
+  }
+  hasLeftChild(index: number) {
+    return this.getLeftChildIndex(index) < this.heap.length;
+  }
+  hasRightChild(index: number) {
+    return this.getRightChildIndex(index) < this.heap.length;
+  }
+  hasParent(index: number) {
+    return this.getParentIndex(index) >= 0;
+  }
+  leftChild(index: number) {
+    return this.heap[this.getLeftChildIndex(index)];
+  }
+  rightChild(index: number) {
+    return this.heap[this.getRightChildIndex(index)];
+  }
+  parent(index: number) {
+    return this.heap[this.getParentIndex(index)];
   }
 
-  bubbleUp(node: Node) {
-    while (node.parent && node.value.distance < node.parent.value.distance) {
-      this.swap(node, node.parent);
-      node = node.parent;
-    }
+  swap(indexOne: number, indexTwo: number) {
+    const temp = this.heap[indexOne];
+    this.heap[indexOne] = this.heap[indexTwo];
+    this.heap[indexTwo] = temp;
   }
 
-  swap(node1: Node, node2: Node) {
-    [node1.value, node2.value] = [node2.value, node1.value];
-  }
-
-  findInsertPosition(): NullableNode {
-    const queue: NullableNode[] = [this.root];
-    while (queue.length) {
-      const node = queue.shift();
-
-      if (node) {
-        if (!node.left || !node.right) {
-          return node;
-        }
-        queue.push(node.left);
-        queue.push(node.right);
-      }
-    }
-
-    return null;
-  }
-
-  extractMin() {
-    if (!this.root) {
+  peek() {
+    if (this.heap.length === 0) {
       return null;
     }
-
-    const minValue = this.root.value;
-    if (this.root === this.lastNode) {
-      this.root = null;
-      this.lastNode = null;
-    } else if (this.lastNode) {
-      this.root.value = this.lastNode.value;
-      this.removeLastNode();
-      this.bubbleDown(this.root);
-    }
-
-    return minValue;
+    return this.heap[0];
   }
 
-  removeLastNode() {
-    const queue: NullableNode[] = [this.root];
-    let node: NullableNode = null;
-    let parent: NullableNode = null;
-
-    while (queue.length) {
-      node = queue.shift() || null;
-
-      if (node) {
-        if (node.left) {
-          queue.push(node.left);
-        }
-        if (node.right) {
-          queue.push(node.right);
-        }
-      }
-
-      if (queue.length) {
-        parent = node;
-      }
+  remove() {
+    if (this.heap.length === 0) {
+      return null;
     }
-
-    if (parent) {
-      if (parent.right === this.lastNode) {
-        parent.right = null;
-      } else {
-        parent.left = null;
-      }
-    }
-
-    this.lastNode = parent;
+    const item = this.heap[0];
+    this.heap[0] = this.heap[this.heap.length - 1];
+    this.heap.pop();
+    this.heapifyDown();
+    return item;
   }
 
-  bubbleDown(node: Node) {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      let smallest = node;
-      if (node.left && node.left.value.distance < smallest.value.distance) {
-        smallest = node.left;
-      }
-      if (node.right && node.right.value.distance < smallest.value.distance) {
-        smallest = node.right;
-      }
+  add(item: Destination) {
+    this.heap.push(item);
+    this.heapifyUp();
+  }
 
-      if (smallest === node) {
+  heapifyUp() {
+    let index = this.heap.length - 1;
+    while (
+      this.hasParent(index) &&
+      this.parent(index).distance > this.heap[index].distance
+    ) {
+      this.swap(this.getParentIndex(index), index);
+      index = this.getParentIndex(index);
+    }
+  }
+
+  heapifyDown() {
+    let index = 0;
+    while (this.hasLeftChild(index)) {
+      let smallerChildIndex = this.getLeftChildIndex(index);
+      if (
+        this.hasRightChild(index) &&
+        this.rightChild(index).distance < this.leftChild(index).distance
+      ) {
+        smallerChildIndex = this.getRightChildIndex(index);
+      }
+      if (this.heap[index].distance < this.heap[smallerChildIndex].distance) {
         break;
+      } else {
+        this.swap(index, smallerChildIndex);
       }
-
-      this.swap(node, smallest);
-      node = smallest;
+      index = smallerChildIndex;
     }
-  }
-
-  isEmpty() {
-    return !this.root;
   }
 }
 
@@ -171,39 +115,52 @@ class Graph {
         distance,
       });
     } else {
-      this.adjList.set(from, []);
+      this.adjList.set(from, [
+        {
+          to,
+          distance,
+        },
+      ]);
     }
     if (tos) {
       tos.push({
         to: from,
         distance,
       });
-    }
-    if (!this.adjList.has(to)) {
-      this.adjList.set(to, []);
+    } else {
+      this.adjList.set(to, [
+        {
+          to: from,
+          distance,
+        },
+      ]);
     }
   }
 
   dijkstra(start: string) {
     const distances = new Map();
-    const pq = new DestinationPriorityQueue();
+    const minHeap = new MinHeap();
     const visited = new Set();
 
-    this.adjList.forEach((_, node) => {
-      distances.set(node, Infinity);
+    this.adjList.forEach((to, from) => {
+      console.log(from, to);
+    });
+
+    this.adjList.forEach((_, to) => {
+      distances.set(to, Infinity);
     });
 
     distances.set(start, 0);
-    pq.insert({
+    minHeap.add({
       to: start,
       distance: 0,
     });
 
-    while (!pq.isEmpty()) {
-      const min = pq.extractMin();
+    while (minHeap.heap.length) {
+      const min = minHeap.remove();
 
       if (min) {
-        const {to: current, distance: currentDist} = min;
+        const {to: current, distance: currentDistance} = min;
 
         if (visited.has(current)) {
           continue;
@@ -213,11 +170,11 @@ class Graph {
 
         const neighbors = this.adjList.get(current) || [];
         for (const {to: next, distance} of neighbors) {
-          const newDist = currentDist + distance;
+          const newDistance = currentDistance + distance;
 
-          if (newDist < distances.get(next)) {
-            distances.set(next, newDist);
-            pq.insert({to: next, distance: newDist});
+          if (newDistance < distances.get(next)) {
+            distances.set(next, newDistance);
+            minHeap.add({to: next, distance: newDistance});
           }
         }
       }
