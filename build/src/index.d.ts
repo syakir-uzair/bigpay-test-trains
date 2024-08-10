@@ -6,6 +6,7 @@ type Destination = {
     from: string;
     to: string;
     distance: number;
+    cumulativeDistance: number;
     checkpoints: Route[];
 };
 declare class MinHeap {

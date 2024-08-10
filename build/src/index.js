@@ -128,7 +128,8 @@ class Graph {
                 from: start,
                 to,
                 checkpoints: [],
-                distance: Infinity,
+                distance: 0,
+                cumulativeDistance: Infinity,
             });
         });
         destinations.set(start, {
@@ -136,6 +137,7 @@ class Graph {
             to: start,
             checkpoints: [],
             distance: 0,
+            cumulativeDistance: 0,
         });
         minHeap.add({
             to: start,
@@ -151,11 +153,12 @@ class Graph {
                 visited.add(current);
                 const neighbors = this.adjList.get(current) || [];
                 for (const { to: next, distance } of neighbors) {
-                    const newDistance = currentDistance + distance;
+                    const newCumulativeDistance = currentDistance + distance;
                     const destination = destinations.get(next);
                     const prevDestination = destinations.get(current);
                     const prevCheckpoints = (_a = prevDestination === null || prevDestination === void 0 ? void 0 : prevDestination.checkpoints) !== null && _a !== void 0 ? _a : [];
-                    if (newDistance < ((_b = destination === null || destination === void 0 ? void 0 : destination.distance) !== null && _b !== void 0 ? _b : Infinity)) {
+                    if (newCumulativeDistance <
+                        ((_b = destination === null || destination === void 0 ? void 0 : destination.cumulativeDistance) !== null && _b !== void 0 ? _b : Infinity)) {
                         const checkpoints = (prevDestination === null || prevDestination === void 0 ? void 0 : prevDestination.checkpoints.length)
                             ? [
                                 ...prevCheckpoints,
@@ -178,9 +181,10 @@ class Graph {
                             from: start,
                             to: next,
                             checkpoints,
-                            distance: newDistance,
+                            distance,
+                            cumulativeDistance: newCumulativeDistance,
                         });
-                        minHeap.add({ to: next, distance: newDistance });
+                        minHeap.add({ to: next, distance: newCumulativeDistance });
                     }
                 }
             }
@@ -198,7 +202,7 @@ function main() {
     const start = '0';
     const destinations = graph.dijkstra(start);
     destinations.forEach((dest, from) => {
-        console.log(`Distance from ${start} to ${from} is ${dest.distance}`, dest);
+        console.log(`Distance from ${start} to ${from} is ${dest.cumulativeDistance}`, dest);
     });
 }
 main();

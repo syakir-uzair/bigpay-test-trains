@@ -6,6 +6,7 @@ type Route = {
 type Destination = {
   from: string;
   to: string;
+  distance: number;
   cumulativeDistance: number;
   checkpoints: Route[];
 };
@@ -154,7 +155,8 @@ class Graph {
         from: start,
         to,
         checkpoints: [],
-        distance: Infinity,
+        distance: 0,
+        cumulativeDistance: Infinity,
       });
     });
 
@@ -163,6 +165,7 @@ class Graph {
       to: start,
       checkpoints: [],
       distance: 0,
+      cumulativeDistance: 0,
     });
 
     minHeap.add({
@@ -184,11 +187,14 @@ class Graph {
 
         const neighbors = this.adjList.get(current) || [];
         for (const {to: next, distance} of neighbors) {
-          const newDistance = currentDistance + distance;
+          const newCumulativeDistance = currentDistance + distance;
           const destination = destinations.get(next);
           const prevDestination = destinations.get(current);
           const prevCheckpoints = prevDestination?.checkpoints ?? [];
-          if (newDistance < (destination?.distance ?? Infinity)) {
+          if (
+            newCumulativeDistance <
+            (destination?.cumulativeDistance ?? Infinity)
+          ) {
             const checkpoints = prevDestination?.checkpoints.length
               ? [
                   ...prevCheckpoints,
@@ -213,9 +219,10 @@ class Graph {
               from: start,
               to: next,
               checkpoints,
-              distance: newDistance,
+              distance,
+              cumulativeDistance: newCumulativeDistance,
             });
-            minHeap.add({to: next, distance: newDistance});
+            minHeap.add({to: next, distance: newCumulativeDistance});
           }
         }
       }
@@ -238,7 +245,10 @@ function main() {
   const destinations = graph.dijkstra(start);
 
   destinations.forEach((dest, from) => {
-    console.log(`Distance from ${start} to ${from} is ${dest.distance}`, dest);
+    console.log(
+      `Distance from ${start} to ${from} is ${dest.cumulativeDistance}`,
+      dest
+    );
   });
 }
 
