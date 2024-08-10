@@ -232,16 +232,13 @@ class Graph {
   }
 }
 
-function main() {
+function solve() {
   const graph = new Graph();
 
-  graph.addEdge('0', '1', 4);
-  graph.addEdge('0', '2', 1);
-  graph.addEdge('2', '1', 2);
-  graph.addEdge('1', '3', 1);
-  graph.addEdge('2', '3', 5);
+  graph.addEdge('A', 'B', 30);
+  graph.addEdge('B', 'C', 10);
 
-  const start = '0';
+  const start = 'A';
   const destinations = graph.dijkstra(start);
 
   destinations.forEach((dest, from) => {
@@ -252,4 +249,22 @@ function main() {
   });
 }
 
-main();
+function main() {
+  // const graph = new Graph();
+  // graph.addEdge('0', '1', 4);
+  // graph.addEdge('0', '2', 1);
+  // graph.addEdge('2', '1', 2);
+  // graph.addEdge('1', '3', 1);
+  // graph.addEdge('2', '3', 5);
+  // const start = '0';
+  // const destinations = graph.dijkstra(start);
+  // destinations.forEach((dest, from) => {
+  //   console.log(
+  //     `Distance from ${start} to ${from} is ${dest.cumulativeDistance}`,
+  //     dest
+  //   );
+  // });
+}
+
+// main();
+solve();
