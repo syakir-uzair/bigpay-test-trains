@@ -1,10 +1,17 @@
-type Destination = {
+type Route = {
   to: string;
   distance: number;
 };
 
+type Destination = {
+  from: string;
+  to: string;
+  distance: number;
+  checkpoints: Route[];
+};
+
 class MinHeap {
-  public heap: Destination[];
+  public heap: Route[];
 
   constructor() {
     this.heap = [];
@@ -63,7 +70,7 @@ class MinHeap {
     return item;
   }
 
-  add(item: Destination) {
+  add(item: Route) {
     this.heap.push(item);
     this.heapifyUp();
   }
@@ -100,7 +107,7 @@ class MinHeap {
 }
 
 class Graph {
-  public adjList: Map<string, Destination[]>;
+  public adjList: Map<string, Route[]>;
 
   constructor() {
     this.adjList = new Map();
@@ -137,20 +144,27 @@ class Graph {
     }
   }
 
-  dijkstra(start: string) {
-    const distances = new Map();
+  dijkstra(start: string): Map<string, Destination> {
+    const destinations = new Map<string, Destination>();
     const minHeap = new MinHeap();
-    const visited = new Set();
-
-    this.adjList.forEach((to, from) => {
-      console.log(from, to);
-    });
+    const visited = new Set<string>();
 
     this.adjList.forEach((_, to) => {
-      distances.set(to, Infinity);
+      destinations.set(start, {
+        from: start,
+        to,
+        checkpoints: [],
+        distance: Infinity,
+      });
     });
 
-    distances.set(start, 0);
+    destinations.set(start, {
+      from: start,
+      to: start,
+      checkpoints: [],
+      distance: 0,
+    });
+
     minHeap.add({
       to: start,
       distance: 0,
@@ -171,16 +185,43 @@ class Graph {
         const neighbors = this.adjList.get(current) || [];
         for (const {to: next, distance} of neighbors) {
           const newDistance = currentDistance + distance;
+          const destination = destinations.get(next);
+          const prevDestination = destinations.get(current);
+          const prevCheckpoints = prevDestination?.checkpoints ?? [];
+          if (newDistance < (destination?.distance ?? Infinity)) {
+            const checkpoints = prevDestination?.checkpoints.length
+              ? [
+                  ...prevCheckpoints,
+                  {
+                    to: current,
+                    // since current distance is cumulative sum, deduct from last distance in checkpoints
+                    distance:
+                      currentDistance -
+                      prevCheckpoints[prevCheckpoints.length - 1].distance,
+                  },
+                ]
+              : current !== start
+                ? [
+                    {
+                      to: current,
+                      distance: currentDistance,
+                    },
+                  ]
+                : [];
 
-          if (newDistance < distances.get(next)) {
-            distances.set(next, newDistance);
+            destinations.set(next, {
+              from: start,
+              to: next,
+              checkpoints,
+              distance: newDistance,
+            });
             minHeap.add({to: next, distance: newDistance});
           }
         }
       }
     }
 
-    return distances;
+    return destinations;
   }
 }
 
@@ -193,11 +234,11 @@ function main() {
   graph.addEdge('1', '3', 1);
   graph.addEdge('2', '3', 5);
 
-  const start = '1';
-  const distances = graph.dijkstra(start);
+  const start = '0';
+  const destinations = graph.dijkstra(start);
 
-  distances.forEach((distance, node) => {
-    console.log(`Distance from node ${start} to node ${node} is ${distance}`);
+  destinations.forEach((dest, from) => {
+    console.log(`Distance from ${start} to ${from} is ${dest.distance}`, dest);
   });
 }
 

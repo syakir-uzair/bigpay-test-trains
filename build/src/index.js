@@ -31,7 +31,6 @@ class MinHeap {
     parent(index) {
         return this.heap[this.getParentIndex(index)];
     }
-    // Functions to create Min Heap
     swap(indexOne, indexTwo) {
         const temp = this.heap[indexOne];
         this.heap[indexOne] = this.heap[indexTwo];
@@ -43,9 +42,6 @@ class MinHeap {
         }
         return this.heap[0];
     }
-    // Removing an element will remove the
-    // top element with highest priority then
-    // heapifyDown will be called
     remove() {
         if (this.heap.length === 0) {
             return null;
@@ -123,16 +119,24 @@ class Graph {
         }
     }
     dijkstra(start) {
-        const distances = new Map();
+        var _a, _b;
+        const destinations = new Map();
         const minHeap = new MinHeap();
         const visited = new Set();
-        this.adjList.forEach((to, from) => {
-            console.log(from, to);
-        });
         this.adjList.forEach((_, to) => {
-            distances.set(to, Infinity);
+            destinations.set(start, {
+                from: start,
+                to,
+                checkpoints: [],
+                distance: Infinity,
+            });
         });
-        distances.set(start, 0);
+        destinations.set(start, {
+            from: start,
+            to: start,
+            checkpoints: [],
+            distance: 0,
+        });
         minHeap.add({
             to: start,
             distance: 0,
@@ -148,14 +152,40 @@ class Graph {
                 const neighbors = this.adjList.get(current) || [];
                 for (const { to: next, distance } of neighbors) {
                     const newDistance = currentDistance + distance;
-                    if (newDistance < distances.get(next)) {
-                        distances.set(next, newDistance);
+                    const destination = destinations.get(next);
+                    const prevDestination = destinations.get(current);
+                    const prevCheckpoints = (_a = prevDestination === null || prevDestination === void 0 ? void 0 : prevDestination.checkpoints) !== null && _a !== void 0 ? _a : [];
+                    if (newDistance < ((_b = destination === null || destination === void 0 ? void 0 : destination.distance) !== null && _b !== void 0 ? _b : Infinity)) {
+                        const checkpoints = (prevDestination === null || prevDestination === void 0 ? void 0 : prevDestination.checkpoints.length)
+                            ? [
+                                ...prevCheckpoints,
+                                {
+                                    to: current,
+                                    // since current distance is cumulative sum, deduct from last distance in checkpoints
+                                    distance: currentDistance -
+                                        prevCheckpoints[prevCheckpoints.length - 1].distance,
+                                },
+                            ]
+                            : current !== start
+                                ? [
+                                    {
+                                        to: current,
+                                        distance: currentDistance,
+                                    },
+                                ]
+                                : [];
+                        destinations.set(next, {
+                            from: start,
+                            to: next,
+                            checkpoints,
+                            distance: newDistance,
+                        });
                         minHeap.add({ to: next, distance: newDistance });
                     }
                 }
             }
         }
-        return distances;
+        return destinations;
     }
 }
 function main() {
@@ -165,10 +195,10 @@ function main() {
     graph.addEdge('2', '1', 2);
     graph.addEdge('1', '3', 1);
     graph.addEdge('2', '3', 5);
-    const start = '1';
-    const distances = graph.dijkstra(start);
-    distances.forEach((distance, node) => {
-        console.log(`Distance from node ${start} to node ${node} is ${distance}`);
+    const start = '0';
+    const destinations = graph.dijkstra(start);
+    destinations.forEach((dest, from) => {
+        console.log(`Distance from ${start} to ${from} is ${dest.distance}`, dest);
     });
 }
 main();
