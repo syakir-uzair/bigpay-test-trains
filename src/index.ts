@@ -109,9 +109,11 @@ class MinHeap {
 
 class Graph {
   public adjList: Map<string, Route[]>;
+  public cache: Map<string, Map<string, Destination>>;
 
   constructor() {
     this.adjList = new Map();
+    this.cache = new Map();
   }
 
   addEdge(from: string, to: string, distance: number) {
@@ -149,6 +151,10 @@ class Graph {
     const destinations = new Map<string, Destination>();
     const minHeap = new MinHeap();
     const visited = new Set<string>();
+
+    if (this.cache.has(start)) {
+      return this.cache.get(start) ?? new Map();
+    }
 
     this.adjList.forEach((_, to) => {
       destinations.set(start, {
@@ -228,36 +234,97 @@ class Graph {
       }
     }
 
+    this.cache.set(start, destinations);
+
     return destinations;
   }
 }
 
-function solve() {
+type Train = {
+  name: string;
+  start: string;
+  currentLocation: string;
+  capacity: number;
+};
+
+type Package = {
+  name: string;
+  from: string;
+  to: string;
+  weight: number;
+  delivered: boolean;
+};
+
+type TrainPackage = {
+  train: Train;
+  package: Package;
+  distance: number;
+};
+
+function solve(graph: Graph, trains: Train[], packages: Package[]) {
+  const deliveredPackages = [];
+  let i = 0;
+  let nearestTrainPackage: TrainPackage | null = null;
+
+  while (deliveredPackages.length < packages.length && i++ < 10) {
+    const undeliveredPackages = packages.filter(pack => !pack.delivered);
+    console.log('=====', nearestTrainPackage);
+
+    if (nearestTrainPackage) {
+      break;
+    }
+
+    for (const pack of undeliveredPackages) {
+      for (const train of trains) {
+        const destination = graph
+          .dijkstra(train.currentLocation)
+          .get(pack.from);
+        const cumulativeDistance = destination?.cumulativeDistance ?? 0;
+        if (
+          nearestTrainPackage === null ||
+          cumulativeDistance < nearestTrainPackage.distance
+        ) {
+          nearestTrainPackage = {
+            train,
+            package: pack,
+            distance: cumulativeDistance,
+          };
+        }
+      }
+    }
+  }
+}
+
+function test() {
   const graph = new Graph();
 
   graph.addEdge('A', 'B', 30);
   graph.addEdge('B', 'C', 10);
 
-  const start = 'A';
-  const destinations = graph.dijkstra(start);
+  const trains: Train[] = [
+    {
+      name: 'Q1',
+      start: 'B',
+      currentLocation: 'B',
+      capacity: 6,
+    },
+  ];
 
-  destinations.forEach((dest, from) => {
-    console.log(
-      `Distance from ${start} to ${from} is ${dest.cumulativeDistance}`,
-      dest
-    );
-  });
-}
+  const packages: Package[] = [
+    {
+      name: 'K1',
+      from: 'A',
+      to: 'C',
+      weight: 5,
+      delivered: false,
+    },
+  ];
 
-function main() {
-  // const graph = new Graph();
-  // graph.addEdge('0', '1', 4);
-  // graph.addEdge('0', '2', 1);
-  // graph.addEdge('2', '1', 2);
-  // graph.addEdge('1', '3', 1);
-  // graph.addEdge('2', '3', 5);
-  // const start = '0';
+  solve(graph, trains, packages);
+
+  // const start = 'A';
   // const destinations = graph.dijkstra(start);
+
   // destinations.forEach((dest, from) => {
   //   console.log(
   //     `Distance from ${start} to ${from} is ${dest.cumulativeDistance}`,
@@ -266,5 +333,22 @@ function main() {
   // });
 }
 
+// function main() {
+//   // const graph = new Graph();
+//   // graph.addEdge('0', '1', 4);
+//   // graph.addEdge('0', '2', 1);
+//   // graph.addEdge('2', '1', 2);
+//   // graph.addEdge('1', '3', 1);
+//   // graph.addEdge('2', '3', 5);
+//   // const start = '0';
+//   // const destinations = graph.dijkstra(start);
+//   // destinations.forEach((dest, from) => {
+//   //   console.log(
+//   //     `Distance from ${start} to ${from} is ${dest.cumulativeDistance}`,
+//   //     dest
+//   //   );
+//   // });
+// }
+
 // main();
-solve();
+test();

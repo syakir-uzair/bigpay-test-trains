@@ -30,8 +30,28 @@ declare class MinHeap {
 }
 declare class Graph {
     adjList: Map<string, Route[]>;
+    cache: Map<string, Map<string, Destination>>;
     constructor();
     addEdge(from: string, to: string, distance: number): void;
     dijkstra(start: string): Map<string, Destination>;
 }
-declare function main(): void;
+type Train = {
+    name: string;
+    start: string;
+    currentLocation: string;
+    capacity: number;
+};
+type Package = {
+    name: string;
+    from: string;
+    to: string;
+    weight: number;
+    delivered: boolean;
+};
+type TrainPackage = {
+    train: Train;
+    package: Package;
+    distance: number;
+} | null;
+declare function solve(graph: Graph, trains: Train[], packages: Package[]): void;
+declare function test(): void;
