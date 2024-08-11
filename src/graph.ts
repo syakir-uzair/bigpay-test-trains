@@ -14,30 +14,14 @@ export class Graph {
     const froms = this.adjList.get(from);
     const tos = this.adjList.get(to);
     if (froms) {
-      froms.push({
-        to,
-        distance,
-      });
+      froms.push({to, distance});
     } else {
-      this.adjList.set(from, [
-        {
-          to,
-          distance,
-        },
-      ]);
+      this.adjList.set(from, [{to, distance}]);
     }
     if (tos) {
-      tos.push({
-        to: from,
-        distance,
-      });
+      tos.push({to: from, distance});
     } else {
-      this.adjList.set(to, [
-        {
-          to: from,
-          distance,
-        },
-      ]);
+      this.adjList.set(to, [{to: from, distance}]);
     }
   }
 
@@ -68,62 +52,57 @@ export class Graph {
       cumulativeDistance: 0,
     });
 
-    minHeap.add({
-      to: start,
-      distance: 0,
-    });
+    minHeap.add({to: start, distance: 0});
 
     while (minHeap.heap.length) {
       const min = minHeap.remove();
 
-      if (min) {
-        const {to: current, distance: currentDistance} = min;
+      // typescript undefined handling
+      if (!min) {
+        break;
+      }
 
-        if (visited.has(current)) {
-          continue;
-        }
+      const {to: current, distance: currentDistance} = min;
 
-        visited.add(current);
+      if (visited.has(current)) {
+        continue;
+      }
 
-        const neighbors = this.adjList.get(current) || [];
-        for (const {to: next, distance} of neighbors) {
-          const newCumulativeDistance = currentDistance + distance;
-          const destination = destinations.get(next);
-          const prevDestination = destinations.get(current);
-          const prevCheckpoints = prevDestination?.checkpoints ?? [];
-          if (
-            newCumulativeDistance <
-            (destination?.cumulativeDistance ?? Infinity)
-          ) {
-            const checkpoints = prevDestination?.checkpoints.length
-              ? [
-                  ...prevCheckpoints,
-                  {
-                    to: current,
-                    // since current distance is cumulative sum, deduct from last distance in checkpoints
-                    distance:
-                      currentDistance -
-                      prevCheckpoints[prevCheckpoints.length - 1].distance,
-                  },
-                ]
-              : current !== start
-                ? [
-                    {
-                      to: current,
-                      distance: currentDistance,
-                    },
-                  ]
-                : [];
+      visited.add(current);
 
-            destinations.set(next, {
-              from: start,
-              to: next,
-              checkpoints,
-              distance,
-              cumulativeDistance: newCumulativeDistance,
-            });
-            minHeap.add({to: next, distance: newCumulativeDistance});
-          }
+      const neighbors = this.adjList.get(current) || [];
+      for (const {to: next, distance} of neighbors) {
+        const newCumulativeDistance = currentDistance + distance;
+        const destination = destinations.get(next);
+        const prevDestination = destinations.get(current);
+        const prevCheckpoints = prevDestination?.checkpoints ?? [];
+
+        if (
+          newCumulativeDistance < (destination?.cumulativeDistance ?? Infinity)
+        ) {
+          const checkpoints = prevDestination?.checkpoints.length
+            ? [
+                ...prevCheckpoints,
+                {
+                  to: current,
+                  // since current distance is cumulative sum, deduct from final checkpoint distance
+                  distance:
+                    currentDistance -
+                    prevCheckpoints[prevCheckpoints.length - 1].distance,
+                },
+              ]
+            : current !== start
+              ? [{to: current, distance: currentDistance}]
+              : [];
+
+          destinations.set(next, {
+            from: start,
+            to: next,
+            checkpoints,
+            distance,
+            cumulativeDistance: newCumulativeDistance,
+          });
+          minHeap.add({to: next, distance: newCumulativeDistance});
         }
       }
     }

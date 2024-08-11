@@ -61,6 +61,7 @@ const testCases: TestCase[] = [
     title: 'Should utilize fastest route even with more checkpoints',
     input: {
       edges: [
+        // its faster to go from to B via C, and faster to go to D via both B and C
         {from: 'A', to: 'B', distance: 40},
         {from: 'A', to: 'C', distance: 10},
         {from: 'B', to: 'C', distance: 20},

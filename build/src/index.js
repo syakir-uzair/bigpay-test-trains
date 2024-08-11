@@ -60,6 +60,7 @@ const testCases = [
         title: 'Should utilize fastest route even with more checkpoints',
         input: {
             edges: [
+                // its faster to go from to B via C, and faster to go to D via both B and C
                 { from: 'A', to: 'B', distance: 40 },
                 { from: 'A', to: 'C', distance: 10 },
                 { from: 'B', to: 'C', distance: 20 },
@@ -94,32 +95,6 @@ function test() {
             console.log('Received:', solution);
         }
     }
-    // console.log(solution);
-    // const start = 'A';
-    // const destinations = graph.dijkstra(start);
-    // destinations.forEach((dest, from) => {
-    //   console.log(
-    //     `Distance from ${start} to ${from} is ${dest.cumulativeDistance}`,
-    //     dest
-    //   );
-    // });
 }
-// function main() {
-//   // const graph = new Graph();
-//   // graph.addEdge('0', '1', 4);
-//   // graph.addEdge('0', '2', 1);
-//   // graph.addEdge('2', '1', 2);
-//   // graph.addEdge('1', '3', 1);
-//   // graph.addEdge('2', '3', 5);
-//   // const start = '0';
-//   // const destinations = graph.dijkstra(start);
-//   // destinations.forEach((dest, from) => {
-//   //   console.log(
-//   //     `Distance from ${start} to ${from} is ${dest.cumulativeDistance}`,
-//   //     dest
-//   //   );
-//   // });
-// }
-// main();
 test();
 //# sourceMappingURL=index.js.map
