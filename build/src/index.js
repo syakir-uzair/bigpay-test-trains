@@ -1,202 +1,7 @@
 "use strict";
-class MinHeap {
-    constructor() {
-        this.heap = [];
-    }
-    // Helper Methods
-    getLeftChildIndex(parentIndex) {
-        return 2 * parentIndex + 1;
-    }
-    getRightChildIndex(parentIndex) {
-        return 2 * parentIndex + 2;
-    }
-    getParentIndex(childIndex) {
-        return Math.floor((childIndex - 1) / 2);
-    }
-    hasLeftChild(index) {
-        return this.getLeftChildIndex(index) < this.heap.length;
-    }
-    hasRightChild(index) {
-        return this.getRightChildIndex(index) < this.heap.length;
-    }
-    hasParent(index) {
-        return this.getParentIndex(index) >= 0;
-    }
-    leftChild(index) {
-        return this.heap[this.getLeftChildIndex(index)];
-    }
-    rightChild(index) {
-        return this.heap[this.getRightChildIndex(index)];
-    }
-    parent(index) {
-        return this.heap[this.getParentIndex(index)];
-    }
-    swap(indexOne, indexTwo) {
-        const temp = this.heap[indexOne];
-        this.heap[indexOne] = this.heap[indexTwo];
-        this.heap[indexTwo] = temp;
-    }
-    peek() {
-        if (this.heap.length === 0) {
-            return null;
-        }
-        return this.heap[0];
-    }
-    remove() {
-        if (this.heap.length === 0) {
-            return null;
-        }
-        const route = this.heap[0];
-        this.heap[0] = this.heap[this.heap.length - 1];
-        this.heap.pop();
-        this.heapifyDown();
-        return route;
-    }
-    add(route) {
-        this.heap.push(route);
-        this.heapifyUp();
-    }
-    heapifyUp() {
-        let index = this.heap.length - 1;
-        while (this.hasParent(index) &&
-            this.parent(index).distance > this.heap[index].distance) {
-            this.swap(this.getParentIndex(index), index);
-            index = this.getParentIndex(index);
-        }
-    }
-    heapifyDown() {
-        let index = 0;
-        while (this.hasLeftChild(index)) {
-            let smallerChildIndex = this.getLeftChildIndex(index);
-            if (this.hasRightChild(index) &&
-                this.rightChild(index).distance < this.leftChild(index).distance) {
-                smallerChildIndex = this.getRightChildIndex(index);
-            }
-            if (this.heap[index].distance < this.heap[smallerChildIndex].distance) {
-                break;
-            }
-            else {
-                this.swap(index, smallerChildIndex);
-            }
-            index = smallerChildIndex;
-        }
-    }
-}
-class Graph {
-    constructor() {
-        this.adjList = new Map();
-        this.cache = new Map();
-    }
-    addEdge(from, to, distance) {
-        const froms = this.adjList.get(from);
-        const tos = this.adjList.get(to);
-        if (froms) {
-            froms.push({
-                to,
-                distance,
-            });
-        }
-        else {
-            this.adjList.set(from, [
-                {
-                    to,
-                    distance,
-                },
-            ]);
-        }
-        if (tos) {
-            tos.push({
-                to: from,
-                distance,
-            });
-        }
-        else {
-            this.adjList.set(to, [
-                {
-                    to: from,
-                    distance,
-                },
-            ]);
-        }
-    }
-    dijkstra(start) {
-        var _a, _b, _c;
-        const destinations = new Map();
-        const minHeap = new MinHeap();
-        const visited = new Set();
-        if (this.cache.has(start)) {
-            return (_a = this.cache.get(start)) !== null && _a !== void 0 ? _a : new Map();
-        }
-        this.adjList.forEach((_, to) => {
-            destinations.set(start, {
-                from: start,
-                to,
-                checkpoints: [],
-                distance: 0,
-                cumulativeDistance: Infinity,
-            });
-        });
-        destinations.set(start, {
-            from: start,
-            to: start,
-            checkpoints: [],
-            distance: 0,
-            cumulativeDistance: 0,
-        });
-        minHeap.add({
-            to: start,
-            distance: 0,
-        });
-        while (minHeap.heap.length) {
-            const min = minHeap.remove();
-            if (min) {
-                const { to: current, distance: currentDistance } = min;
-                if (visited.has(current)) {
-                    continue;
-                }
-                visited.add(current);
-                const neighbors = this.adjList.get(current) || [];
-                for (const { to: next, distance } of neighbors) {
-                    const newCumulativeDistance = currentDistance + distance;
-                    const destination = destinations.get(next);
-                    const prevDestination = destinations.get(current);
-                    const prevCheckpoints = (_b = prevDestination === null || prevDestination === void 0 ? void 0 : prevDestination.checkpoints) !== null && _b !== void 0 ? _b : [];
-                    if (newCumulativeDistance <
-                        ((_c = destination === null || destination === void 0 ? void 0 : destination.cumulativeDistance) !== null && _c !== void 0 ? _c : Infinity)) {
-                        const checkpoints = (prevDestination === null || prevDestination === void 0 ? void 0 : prevDestination.checkpoints.length)
-                            ? [
-                                ...prevCheckpoints,
-                                {
-                                    to: current,
-                                    // since current distance is cumulative sum, deduct from last distance in checkpoints
-                                    distance: currentDistance -
-                                        prevCheckpoints[prevCheckpoints.length - 1].distance,
-                                },
-                            ]
-                            : current !== start
-                                ? [
-                                    {
-                                        to: current,
-                                        distance: currentDistance,
-                                    },
-                                ]
-                                : [];
-                        destinations.set(next, {
-                            from: start,
-                            to: next,
-                            checkpoints,
-                            distance,
-                            cumulativeDistance: newCumulativeDistance,
-                        });
-                        minHeap.add({ to: next, distance: newCumulativeDistance });
-                    }
-                }
-            }
-        }
-        this.cache.set(start, destinations);
-        return destinations;
-    }
-}
+Object.defineProperty(exports, "__esModule", { value: true });
+const graph_1 = require("./graph");
+const assert = require('node:assert');
 class Navigation {
     constructor(graph, trains, packages) {
         this.nearestTrainToPickUp = null;
@@ -356,7 +161,7 @@ class Navigation {
     }
 }
 function test() {
-    const graph = new Graph();
+    const graph = new graph_1.Graph();
     graph.addEdge('A', 'B', 30);
     graph.addEdge('B', 'C', 10);
     const trains = [
@@ -382,7 +187,8 @@ function test() {
     ];
     const nav = new Navigation(graph, trains, packages);
     const solution = nav.solve();
-    console.log(solution);
+    assert.deepEqual(solution, solution, 'should work');
+    // console.log(solution);
     // const start = 'A';
     // const destinations = graph.dijkstra(start);
     // destinations.forEach((dest, from) => {
