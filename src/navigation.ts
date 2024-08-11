@@ -227,9 +227,10 @@ export class Navigation {
 
         if (this.nearestDestinationToDeliver) {
           this.deliverPackage(this.nearestDestinationToDeliver);
+        } else {
+          // something is wrong, break out of the loop
+          break;
         }
-
-        break;
       }
 
       unpickedUpPackages = this.packages.filter(

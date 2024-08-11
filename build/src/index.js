@@ -48,6 +48,55 @@ const testCases = [
             },
         ],
     },
+    {
+        title: 'Invalid package starting location',
+        input: {
+            edges: [
+                {
+                    from: 'A',
+                    to: 'B',
+                    distance: 30,
+                },
+                {
+                    from: 'B',
+                    to: 'C',
+                    distance: 10,
+                },
+            ],
+            packages: [{ name: 'K1', weight: 5, from: 'X', to: 'C' }],
+            trains: [{ name: 'Q1', capacity: 6, start: 'B' }],
+        },
+        expectedOutput: [],
+    },
+    {
+        title: 'Invalid package destination',
+        input: {
+            edges: [
+                {
+                    from: 'A',
+                    to: 'B',
+                    distance: 30,
+                },
+                {
+                    from: 'B',
+                    to: 'C',
+                    distance: 10,
+                },
+            ],
+            packages: [{ name: 'K1', weight: 5, from: 'A', to: 'X' }],
+            trains: [{ name: 'Q1', capacity: 6, start: 'B' }],
+        },
+        expectedOutput: [
+            {
+                W: 0,
+                T: 'Q1',
+                N1: 'B',
+                P1: [],
+                N2: 'A',
+                P2: [],
+            },
+        ],
+    },
 ];
 function test() {
     for (const testCase of testCases) {

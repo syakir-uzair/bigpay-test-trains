@@ -173,7 +173,10 @@ class Navigation {
                 if (this.nearestDestinationToDeliver) {
                     this.deliverPackage(this.nearestDestinationToDeliver);
                 }
-                break;
+                else {
+                    // something is wrong, break out of the loop
+                    break;
+                }
             }
             unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp && !pack.delivered);
             undeliveredPackages = this.packages.filter(pack => !pack.delivered);
