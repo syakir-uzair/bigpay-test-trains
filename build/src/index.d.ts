@@ -40,7 +40,9 @@ type Train = {
     start: string;
     currentLocation: string;
     capacity: number;
-    packages: Package[];
+    packagesToPickUp: Package[];
+    packagesPickedUp: Package[];
+    packagesDelivered: Package[];
 };
 type Package = {
     name: string;
@@ -50,11 +52,14 @@ type Package = {
     pickedUp: boolean;
     delivered: boolean;
 };
-type TrainToPickup = {
+type TrainPickUpQueue = {
     train: Train;
     package: Package;
     destination: Destination;
-    distance: number;
+};
+type TrainDeliverQueue = {
+    train: Train;
+    destination: Destination;
 };
 type Movement = {
     startTime: number;
@@ -69,13 +74,17 @@ declare class Navigation {
     graph: Graph;
     trains: Train[];
     packages: Package[];
-    nearestTrainToPickUp: TrainToPickup | null;
+    nearestTrainToPickUp: TrainPickUpQueue | null;
+    nearestDestinationToDeliver: TrainDeliverQueue | null;
     movements: Movement[];
+    packagesToPickUp: Map<string, Package[]>;
     constructor(graph: Graph, trains: Train[], packages: Package[]);
     getCapableTrains(weight: number): Train[];
-    findNearestPackageToPickUp(pack: Package, capableTrains: Train[]): void;
-    moveTrain(train: Train, destination: Destination): void;
-    pickUpPackage(nearestTrainToPickUp: TrainToPickup): void;
+    findNearestPackageToPickUp(undeliveredPackages: Package[]): void;
+    findNearestDestinationToDeliver(): void;
+    moveTrain(train: Train, destination: Destination, packagesToDeliver?: Package[]): void;
+    pickUpPackage(nearestTrainToPickUp: TrainPickUpQueue): void;
+    deliverPackage(nearestDestinationToDeliver: TrainDeliverQueue): void;
     solve(): Movement[];
 }
 declare function test(): void;
