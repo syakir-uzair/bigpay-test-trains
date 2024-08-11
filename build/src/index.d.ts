@@ -24,7 +24,7 @@ declare class MinHeap {
     swap(indexOne: number, indexTwo: number): void;
     peek(): Route | null;
     remove(): Route | null;
-    add(item: Route): void;
+    add(route: Route): void;
     heapifyUp(): void;
     heapifyDown(): void;
 }
@@ -40,18 +40,42 @@ type Train = {
     start: string;
     currentLocation: string;
     capacity: number;
+    packages: Package[];
 };
 type Package = {
     name: string;
     from: string;
     to: string;
     weight: number;
+    pickedUp: boolean;
     delivered: boolean;
 };
-type TrainPackage = {
+type TrainToPickup = {
     train: Train;
     package: Package;
+    destination: Destination;
     distance: number;
-} | null;
-declare function solve(graph: Graph, trains: Train[], packages: Package[]): void;
+};
+type Movement = {
+    startTime: number;
+    endTime: number;
+    train: Train;
+    from: string;
+    to: string;
+    packagesPickedUp: Package[];
+    packagesDelivered: Package[];
+};
+declare class Navigation {
+    graph: Graph;
+    trains: Train[];
+    packages: Package[];
+    nearestTrainToPickUp: TrainToPickup | null;
+    movements: Movement[];
+    constructor(graph: Graph, trains: Train[], packages: Package[]);
+    getCapableTrains(weight: number): Train[];
+    findNearestPackageToPickUp(pack: Package, capableTrains: Train[]): void;
+    moveTrain(train: Train, destination: Destination): void;
+    pickUpPackage(nearestTrainToPickUp: TrainToPickup): void;
+    solve(): Movement[];
+}
 declare function test(): void;

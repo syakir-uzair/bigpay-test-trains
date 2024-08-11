@@ -64,15 +64,15 @@ class MinHeap {
     if (this.heap.length === 0) {
       return null;
     }
-    const item = this.heap[0];
+    const route = this.heap[0];
     this.heap[0] = this.heap[this.heap.length - 1];
     this.heap.pop();
     this.heapifyDown();
-    return item;
+    return route;
   }
 
-  add(item: Route) {
-    this.heap.push(item);
+  add(route: Route) {
+    this.heap.push(route);
     this.heapifyUp();
   }
 
@@ -245,6 +245,7 @@ type Train = {
   start: string;
   currentLocation: string;
   capacity: number;
+  packages: Package[];
 };
 
 type Package = {
@@ -252,46 +253,153 @@ type Package = {
   from: string;
   to: string;
   weight: number;
+  pickedUp: boolean;
   delivered: boolean;
 };
 
-type TrainPackage = {
+type TrainToPickup = {
   train: Train;
   package: Package;
+  destination: Destination;
   distance: number;
 };
 
-function solve(graph: Graph, trains: Train[], packages: Package[]) {
-  const deliveredPackages = [];
-  let i = 0;
-  let nearestTrainPackage: TrainPackage | null = null;
+type Movement = {
+  startTime: number;
+  endTime: number;
+  train: Train;
+  from: string;
+  to: string;
+  packagesPickedUp: Package[];
+  packagesDelivered: Package[];
+};
 
-  while (deliveredPackages.length < packages.length && i++ < 10) {
-    const undeliveredPackages = packages.filter(pack => !pack.delivered);
-    console.log('=====', nearestTrainPackage);
+class Navigation {
+  public graph: Graph;
+  public trains: Train[];
+  public packages: Package[];
+  public nearestTrainToPickUp: TrainToPickup | null = null;
+  public movements: Movement[];
 
-    if (nearestTrainPackage) {
-      break;
-    }
+  constructor(graph: Graph, trains: Train[], packages: Package[]) {
+    this.graph = graph;
+    this.trains = trains;
+    this.packages = packages;
+    this.movements = [];
+  }
 
-    for (const pack of undeliveredPackages) {
-      for (const train of trains) {
-        const destination = graph
-          .dijkstra(train.currentLocation)
-          .get(pack.from);
-        const cumulativeDistance = destination?.cumulativeDistance ?? 0;
-        if (
-          nearestTrainPackage === null ||
-          cumulativeDistance < nearestTrainPackage.distance
-        ) {
-          nearestTrainPackage = {
-            train,
-            package: pack,
-            distance: cumulativeDistance,
-          };
-        }
+  getCapableTrains(weight: number) {
+    return this.trains.filter(
+      train =>
+        train.capacity -
+          train.packages.reduce((prev, cur) => prev + cur.weight, 0) >=
+        weight
+    );
+  }
+
+  findNearestPackageToPickUp(pack: Package, capableTrains: Train[]) {
+    for (const train of capableTrains) {
+      const destination = this.graph
+        .dijkstra(train.currentLocation)
+        .get(pack.from);
+
+      if (!destination) {
+        continue;
+      }
+
+      const cumulativeDistance = destination?.cumulativeDistance ?? 0;
+      if (
+        this.nearestTrainToPickUp === null ||
+        cumulativeDistance < this.nearestTrainToPickUp.distance
+      ) {
+        this.nearestTrainToPickUp = {
+          train,
+          package: pack,
+          destination,
+          distance: cumulativeDistance,
+        };
       }
     }
+  }
+
+  moveTrain(train: Train, destination: Destination) {
+    const checkpoints = destination.checkpoints;
+    const trainMovements = this.movements.filter(mv => mv.train === train);
+    const trainTimeTaken =
+      trainMovements.length > 0
+        ? trainMovements[trainMovements.length - 1].endTime
+        : 0;
+    let newTrainTimeTaken = trainTimeTaken + destination.distance;
+    this.movements.push({
+      startTime: trainTimeTaken,
+      endTime: newTrainTimeTaken,
+      train,
+      from: destination.from,
+      to: checkpoints.length ? checkpoints[0].to : destination.to,
+      packagesPickedUp: [],
+      packagesDelivered: [],
+    });
+    if (checkpoints.length) {
+      for (let i = 0; i < checkpoints.length; i++) {
+        newTrainTimeTaken += checkpoints[i].distance;
+        this.movements.push({
+          startTime: trainTimeTaken,
+          endTime: newTrainTimeTaken,
+          train,
+          from: checkpoints[i].to,
+          to:
+            i < checkpoints.length - 1 ? checkpoints[i + 1].to : destination.to,
+          packagesPickedUp: [],
+          packagesDelivered: [],
+        });
+      }
+    }
+    train.currentLocation = destination.to;
+  }
+
+  pickUpPackage(nearestTrainToPickUp: TrainToPickup) {
+    const {train, destination} = nearestTrainToPickUp;
+    this.moveTrain(train, destination);
+    train.packages.push(nearestTrainToPickUp.package);
+    nearestTrainToPickUp.package.pickedUp = true;
+    this.nearestTrainToPickUp = null;
+  }
+
+  solve() {
+    let i = 0;
+    let unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
+    let undeliveredPackages = this.packages.filter(pack => !pack.delivered);
+
+    while (
+      undeliveredPackages.length > 0 &&
+      unpickedUpPackages.length > 0 &&
+      i++ < 10
+    ) {
+      console.log('=====', undeliveredPackages, this.nearestTrainToPickUp);
+
+      if (this.nearestTrainToPickUp) {
+        this.pickUpPackage(this.nearestTrainToPickUp);
+        this.nearestTrainToPickUp = null;
+        break;
+      }
+
+      for (const pack of undeliveredPackages) {
+        // Ensure that the trains have the capacity
+        const capableTrains = this.getCapableTrains(pack.weight);
+        this.findNearestPackageToPickUp(pack, capableTrains);
+      }
+
+      // No package can be picked up, deliver first
+      if (!this.nearestTrainToPickUp) {
+        break;
+        // this.findNearestDestinationToDeliver();
+      }
+
+      unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
+      undeliveredPackages = this.packages.filter(pack => !pack.delivered);
+    }
+
+    return this.movements;
   }
 }
 
@@ -307,6 +415,7 @@ function test() {
       start: 'B',
       currentLocation: 'B',
       capacity: 6,
+      packages: [],
     },
   ];
 
@@ -316,11 +425,14 @@ function test() {
       from: 'A',
       to: 'C',
       weight: 5,
+      pickedUp: false,
       delivered: false,
     },
   ];
 
-  solve(graph, trains, packages);
+  const nav = new Navigation(graph, trains, packages);
+  const solution = nav.solve();
+  console.log(solution);
 
   // const start = 'A';
   // const destinations = graph.dijkstra(start);
