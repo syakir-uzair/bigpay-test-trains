@@ -57,7 +57,7 @@ export class Graph {
     while (minHeap.heap.length) {
       const min = minHeap.remove();
 
-      // typescript undefined handling
+      // ts undefined handling
       if (!min) {
         break;
       }

@@ -66,6 +66,7 @@ export class Navigation {
           .dijkstra(train.currentLocation)
           .get(pack.from);
 
+        // ts undefined handling
         if (!destination) {
           continue;
         }
