@@ -44,3 +44,34 @@ export type Movement = {
     packagesPickedUp: Package[];
     packagesDelivered: Package[];
 };
+export type Input = {
+    edges: {
+        from: string;
+        to: string;
+        distance: number;
+    }[];
+    packages: {
+        name: string;
+        weight: number;
+        from: string;
+        to: string;
+    }[];
+    trains: {
+        name: string;
+        capacity: number;
+        start: string;
+    }[];
+};
+export type Output = {
+    W: number;
+    T: string;
+    N1: string;
+    P1: string[];
+    N2: string;
+    P2: string[];
+}[];
+export type TestCase = {
+    title: string;
+    input: Input;
+    expectedOutput: Output;
+};

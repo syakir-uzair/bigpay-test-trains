@@ -2,7 +2,9 @@ import {Graph} from './graph';
 import {
   Destination,
   Movement,
+  Output,
   Package,
+  TestCase,
   Train,
   TrainDeliverQueue,
   TrainPickUpQueue,
@@ -17,7 +19,27 @@ export class Navigation {
   public movements: Movement[] = [];
   public packagesToPickUp: Map<string, Package[]> = new Map();
 
-  constructor(graph: Graph, trains: Train[], packages: Package[]) {
+  constructor(input: TestCase['input']) {
+    const graph = new Graph();
+
+    for (const edge of input.edges) {
+      graph.addEdge(edge.from, edge.to, edge.distance);
+    }
+
+    const trains: Train[] = input.trains.map(train => ({
+      ...train,
+      currentLocation: train.start,
+      packagesToPickUp: [],
+      packagesPickedUp: [],
+      packagesDelivered: [],
+    }));
+
+    const packages: Package[] = input.packages.map(pack => ({
+      ...pack,
+      pickedUp: false,
+      delivered: false,
+    }));
+
     this.graph = graph;
     this.trains = trains;
     this.packages = packages;
@@ -105,7 +127,9 @@ export class Navigation {
       trainMovements.length > 0
         ? trainMovements[trainMovements.length - 1].endTime
         : 0;
-    let endTime = startTime + destination.distance;
+    let endTime =
+      startTime +
+      (checkpoints.length ? checkpoints[0].distance : destination.distance);
     let packagesPickedUp: Package[] = [];
 
     if (train.packagesToPickUp.length) {
@@ -127,7 +151,11 @@ export class Navigation {
     if (checkpoints.length) {
       for (let i = 0; i < checkpoints.length; i++) {
         startTime = endTime;
-        endTime = startTime + checkpoints[i].distance;
+        endTime =
+          startTime +
+          (i < checkpoints.length - 1
+            ? checkpoints[i + 1].distance
+            : destination.distance);
         this.movements.push({
           startTime,
           endTime,
@@ -175,7 +203,7 @@ export class Navigation {
     this.moveTrain(train, destination, packagesToDeliver);
   }
 
-  solve() {
+  solve(): Output {
     let i = 0;
     let unpickedUpPackages = this.packages.filter(
       pack => !pack.pickedUp && !pack.delivered
@@ -210,6 +238,15 @@ export class Navigation {
       undeliveredPackages = this.packages.filter(pack => !pack.delivered);
     }
 
-    return this.movements;
+    // console.log(this.movements);
+
+    return this.movements.map(mv => ({
+      W: mv.startTime,
+      T: mv.train.name,
+      N1: mv.from,
+      P1: mv.packagesPickedUp.map(pack => pack.name),
+      N2: mv.to,
+      P2: mv.packagesDelivered.map(pack => pack.name),
+    }));
   }
 }

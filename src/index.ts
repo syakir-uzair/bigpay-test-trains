@@ -1,41 +1,73 @@
-import {Graph} from './graph';
 import {Navigation} from './navigation';
-import {Package, Train} from './types';
+import {Output, TestCase} from './types';
 
 const assert = require('node:assert');
 
+const testCases: TestCase[] = [
+  {
+    title: 'Basic case',
+    input: {
+      edges: [
+        {
+          from: 'A',
+          to: 'B',
+          distance: 30,
+        },
+        {
+          from: 'B',
+          to: 'C',
+          distance: 10,
+        },
+      ],
+      packages: [{name: 'K1', weight: 5, from: 'A', to: 'C'}],
+      trains: [{name: 'Q1', capacity: 6, start: 'B'}],
+    },
+    expectedOutput: [
+      {
+        W: 0,
+        T: 'Q1',
+        N1: 'B',
+        P1: [],
+        N2: 'A',
+        P2: [],
+      },
+      {
+        W: 30,
+        T: 'Q1',
+        N1: 'A',
+        P1: ['K1'],
+        N2: 'B',
+        P2: [],
+      },
+      {
+        W: 60,
+        T: 'Q1',
+        N1: 'B',
+        P1: [],
+        N2: 'C',
+        P2: ['K1'],
+      },
+    ],
+  },
+];
+
 function test() {
-  const graph = new Graph();
+  for (const testCase of testCases) {
+    let solution: Output = [];
 
-  graph.addEdge('A', 'B', 30);
-  graph.addEdge('B', 'C', 10);
+    try {
+      console.log('Running test case for:', testCase.title);
+      const nav = new Navigation(testCase.input);
+      solution = nav.solve();
+      assert.deepEqual(solution, testCase.expectedOutput, testCase.title);
+      console.log('Success!');
+    } catch (e) {
+      console.error('Failed!');
+      console.log('Expected:', testCase.expectedOutput);
+      console.log('Received:', solution);
+    }
+  }
 
-  const trains: Train[] = [
-    {
-      name: 'Q1',
-      start: 'B',
-      currentLocation: 'B',
-      capacity: 6,
-      packagesToPickUp: [],
-      packagesPickedUp: [],
-      packagesDelivered: [],
-    },
-  ];
-
-  const packages: Package[] = [
-    {
-      name: 'K1',
-      from: 'A',
-      to: 'C',
-      weight: 5,
-      pickedUp: false,
-      delivered: false,
-    },
-  ];
-
-  const nav = new Navigation(graph, trains, packages);
-  const solution = nav.solve();
-  assert.deepEqual(solution, solution, 'should work');
   // console.log(solution);
 
   // const start = 'A';
