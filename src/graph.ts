@@ -57,9 +57,8 @@ export class Graph {
     while (minHeap.heap.length) {
       const min = minHeap.remove();
 
-      // ts undefined handling
       if (!min) {
-        break;
+        throw new Error('Minimum distance not found');
       }
 
       const {to: current, distance: currentDistance} = min;
@@ -110,5 +109,14 @@ export class Graph {
     this.cache.set(start, destinations);
 
     return destinations;
+  }
+  getDestination(from: string, to: string) {
+    const destination = this.dijkstra(from).get(to);
+
+    if (!destination) {
+      throw new Error('Destination not found');
+    }
+
+    return destination;
   }
 }

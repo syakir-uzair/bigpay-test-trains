@@ -66,14 +66,10 @@ export class Navigation {
       // Ensure that the trains have the capacity
       const capableTrains = this.getCapableTrains(pack.weight);
       for (const train of capableTrains) {
-        const destination = this.graph
-          .dijkstra(train.currentLocation)
-          .get(pack.from);
-
-        // ts undefined handling
-        if (!destination) {
-          continue;
-        }
+        const destination = this.graph.getDestination(
+          train.currentLocation,
+          pack.from
+        );
 
         const cumulativeDistance = destination?.cumulativeDistance ?? 0;
         if (
@@ -97,13 +93,10 @@ export class Navigation {
         ...train.packagesToPickUp,
         ...train.packagesPickedUp,
       ]) {
-        const destination = this.graph
-          .dijkstra(train.currentLocation)
-          .get(packageToDeliver.to);
-
-        if (!destination) {
-          continue;
-        }
+        const destination = this.graph.getDestination(
+          train.currentLocation,
+          packageToDeliver.to
+        );
 
         const cumulativeDistance = destination?.cumulativeDistance ?? 0;
         if (
@@ -210,7 +203,7 @@ export class Navigation {
     this.moveTrain(train, destination, packagesToDeliver);
   }
 
-  solve(): Output {
+  calculate() {
     let unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
     let undeliveredPackages = this.packages.filter(pack => !pack.delivered);
 
@@ -236,16 +229,25 @@ export class Navigation {
       unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
       undeliveredPackages = this.packages.filter(pack => !pack.delivered);
     }
+  }
 
-    // console.log(this.movements);
+  solve(): Output {
+    try {
+      this.calculate();
 
-    return this.movements.map(mv => ({
-      W: mv.startTime,
-      T: mv.train.name,
-      N1: mv.from,
-      P1: mv.packagesPickedUp.map(pack => pack.name),
-      N2: mv.to,
-      P2: mv.packagesDelivered.map(pack => pack.name),
-    }));
+      // console.log(this.movements);
+      return this.movements.map(mv => ({
+        W: mv.startTime,
+        T: mv.train.name,
+        N1: mv.from,
+        P1: mv.packagesPickedUp.map(pack => pack.name),
+        N2: mv.to,
+        P2: mv.packagesDelivered.map(pack => pack.name),
+      }));
+    } catch (e) {
+      // console.log(e);
+
+      return [];
+    }
   }
 }

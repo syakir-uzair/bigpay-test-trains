@@ -42,8 +42,7 @@ const testCases: TestCase[] = [
       packages: [{name: 'K1', weight: 5, from: 'A', to: 'X'}],
       trains: [{name: 'Q1', capacity: 6, start: 'B'}],
     },
-    // train is still able to pick up the package
-    expectedOutput: [{W: 0, T: 'Q1', N1: 'B', P1: [], N2: 'A', P2: []}],
+    expectedOutput: [],
   },
   {
     title: 'Insufficient train capacity',
@@ -103,7 +102,7 @@ const testCases: TestCase[] = [
 
 function test() {
   for (const testCase of testCases) {
-    let solution: Output = [];
+    let solution: Output | null = null;
 
     try {
       console.log('Running test case for:', testCase.title);
