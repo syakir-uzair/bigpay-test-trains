@@ -46,15 +46,14 @@ export class Navigation {
   }
 
   getCapableTrains(weight: number) {
-    return this.trains.filter(
-      train =>
-        train.capacity -
-          [...train.packagesToPickUp, ...train.packagesPickedUp].reduce(
-            (prev, cur) => prev + cur.weight,
-            0
-          ) >=
-        weight
-    );
+    return this.trains.filter(train => {
+      const packagesTotalWeight = [
+        ...train.packagesToPickUp,
+        ...train.packagesPickedUp,
+      ].reduce((prev, cur) => prev + cur.weight, 0);
+      const trainCapacityLeft = train.capacity - packagesTotalWeight;
+      return trainCapacityLeft >= weight;
+    });
   }
 
   findNextPackageToPickUp() {
