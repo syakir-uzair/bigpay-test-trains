@@ -100,7 +100,7 @@ const testCases: TestCase[] = [
   },
   {
     title:
-      'Should utilize multiple trains in parallel for fastest delivery (6-way crossroads shape)',
+      'Should move multiple trains in parallel for fastest delivery (6-way crossroads shape)',
     input: {
       edges: [
         {from: 'A', to: 'X', distance: 10},
@@ -128,6 +128,32 @@ const testCases: TestCase[] = [
       {W: 10, T: 'Q1', N1: 'X', P1: ['K1'], N2: 'D', P2: ['K1']},
       {W: 10, T: 'Q2', N1: 'X', P1: ['K2'], N2: 'E', P2: ['K2']},
       {W: 10, T: 'Q3', N1: 'X', P1: ['K3'], N2: 'F', P2: ['K3']},
+    ],
+  },
+  {
+    title:
+      'Should move only nearby train for fastest delivery if the other train is too far away (4-way crossroads shape)',
+    input: {
+      edges: [
+        {from: 'A', to: 'X', distance: 50},
+        {from: 'B', to: 'X', distance: 10},
+        {from: 'C', to: 'X', distance: 10},
+        {from: 'D', to: 'X', distance: 10},
+      ],
+      packages: [
+        {name: 'K1', weight: 5, from: 'X', to: 'C'},
+        {name: 'K2', weight: 5, from: 'X', to: 'D'},
+      ],
+      trains: [
+        {name: 'Q1', capacity: 10, start: 'A'},
+        {name: 'Q2', capacity: 10, start: 'B'},
+      ],
+    },
+    expectedOutput: [
+      {W: 0, T: 'Q2', N1: 'B', P1: [], N2: 'X', P2: []},
+      {W: 10, T: 'Q2', N1: 'X', P1: ['K1', 'K2'], N2: 'C', P2: ['K1']},
+      {W: 20, T: 'Q2', N1: 'C', P1: [], N2: 'X', P2: []},
+      {W: 30, T: 'Q2', N1: 'X', P1: [], N2: 'D', P2: ['K2']},
     ],
   },
 ];
