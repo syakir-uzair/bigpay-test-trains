@@ -14,7 +14,7 @@ export class Navigation {
   public graph: Graph;
   public trains: Train[];
   public packages: Package[];
-  public nearestTrainToPickUp: TrainPickUpQueue | null = null;
+  public bestTrainToPickUp: TrainPickUpQueue | null = null;
   public nearestDestinationToDeliver: TrainDeliverQueue | null = null;
   public movements: Movement[] = [];
   public packagesToPickUp: Map<string, Package[]> = new Map();
@@ -57,8 +57,12 @@ export class Navigation {
     );
   }
 
-  findNearestPackageToPickUp(unpickedUpPackages: Package[]) {
-    for (const pack of unpickedUpPackages) {
+  findNextPackageToPickUp() {
+    for (const pack of this.packages) {
+      if (pack.pickedUp || pack.delivered) {
+        continue;
+      }
+
       // Ensure that the trains have the capacity
       const capableTrains = this.getCapableTrains(pack.weight);
       for (const train of capableTrains) {
@@ -73,11 +77,11 @@ export class Navigation {
 
         const cumulativeDistance = destination?.cumulativeDistance ?? 0;
         if (
-          this.nearestTrainToPickUp === null ||
+          this.bestTrainToPickUp === null ||
           cumulativeDistance <
-            this.nearestTrainToPickUp.destination.cumulativeDistance
+            this.bestTrainToPickUp.destination.cumulativeDistance
         ) {
-          this.nearestTrainToPickUp = {
+          this.bestTrainToPickUp = {
             train,
             package: pack,
             destination,
@@ -185,16 +189,16 @@ export class Navigation {
     }
   }
 
-  pickUpPackage(nearestTrainToPickUp: TrainPickUpQueue) {
-    const {train, destination} = nearestTrainToPickUp;
+  pickUpPackage(bestTrainToPickUp: TrainPickUpQueue) {
+    const {train, destination} = bestTrainToPickUp;
     if (destination.cumulativeDistance) {
       this.moveTrain(train, destination);
     }
     // packages should only be picked up by the train on the next move
-    train.packagesToPickUp.push(nearestTrainToPickUp.package);
+    train.packagesToPickUp.push(bestTrainToPickUp.package);
     // mark package as picked up
-    nearestTrainToPickUp.package.pickedUp = true;
-    this.nearestTrainToPickUp = null;
+    bestTrainToPickUp.package.pickedUp = true;
+    this.bestTrainToPickUp = null;
   }
 
   deliverPackage(nearestDestinationToDeliver: TrainDeliverQueue) {
@@ -211,17 +215,14 @@ export class Navigation {
     let undeliveredPackages = this.packages.filter(pack => !pack.delivered);
 
     while (undeliveredPackages.length > 0 && unpickedUpPackages.length > 0) {
-      if (this.nearestTrainToPickUp) {
-        this.pickUpPackage(this.nearestTrainToPickUp);
+      if (this.bestTrainToPickUp) {
+        this.pickUpPackage(this.bestTrainToPickUp);
       }
 
-      unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
-      undeliveredPackages = this.packages.filter(pack => !pack.delivered);
-
-      this.findNearestPackageToPickUp(unpickedUpPackages);
+      this.findNextPackageToPickUp();
 
       // If there is no package can be picked up, deliver first
-      if (!this.nearestTrainToPickUp) {
+      if (!this.bestTrainToPickUp) {
         this.findNearestDestinationToDeliver();
 
         if (this.nearestDestinationToDeliver) {

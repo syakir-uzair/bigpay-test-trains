@@ -4,16 +4,16 @@ export declare class Navigation {
     graph: Graph;
     trains: Train[];
     packages: Package[];
-    nearestTrainToPickUp: TrainPickUpQueue | null;
+    bestTrainToPickUp: TrainPickUpQueue | null;
     nearestDestinationToDeliver: TrainDeliverQueue | null;
     movements: Movement[];
     packagesToPickUp: Map<string, Package[]>;
     constructor(input: TestCase['input']);
     getCapableTrains(weight: number): Train[];
-    findNearestPackageToPickUp(unpickedUpPackages: Package[]): void;
+    findNextPackageToPickUp(): void;
     findNearestDestinationToDeliver(): void;
     moveTrain(train: Train, destination: Destination, packagesToDeliver?: Package[]): void;
-    pickUpPackage(nearestTrainToPickUp: TrainPickUpQueue): void;
+    pickUpPackage(bestTrainToPickUp: TrainPickUpQueue): void;
     deliverPackage(nearestDestinationToDeliver: TrainDeliverQueue): void;
     solve(): Output;
 }
