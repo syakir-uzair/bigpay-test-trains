@@ -10,7 +10,7 @@ export declare class Navigation {
     packagesToPickUp: Map<string, Package[]>;
     constructor(input: TestCase['input']);
     getCapableTrains(weight: number): Train[];
-    findNearestPackageToPickUp(undeliveredPackages: Package[]): void;
+    findNearestPackageToPickUp(unpickedUpPackages: Package[]): void;
     findNearestDestinationToDeliver(): void;
     moveTrain(train: Train, destination: Destination, packagesToDeliver?: Package[]): void;
     pickUpPackage(nearestTrainToPickUp: TrainPickUpQueue): void;

@@ -33,15 +33,16 @@ class Navigation {
             [...train.packagesToPickUp, ...train.packagesPickedUp].reduce((prev, cur) => prev + cur.weight, 0) >=
             weight);
     }
-    findNearestPackageToPickUp(undeliveredPackages) {
+    findNearestPackageToPickUp(unpickedUpPackages) {
         var _a;
-        for (const pack of undeliveredPackages) {
+        for (const pack of unpickedUpPackages) {
             // Ensure that the trains have the capacity
             const capableTrains = this.getCapableTrains(pack.weight);
             for (const train of capableTrains) {
                 const destination = this.graph
                     .dijkstra(train.currentLocation)
                     .get(pack.from);
+                // ts undefined handling
                 if (!destination) {
                     continue;
                 }
@@ -141,7 +142,9 @@ class Navigation {
     }
     pickUpPackage(nearestTrainToPickUp) {
         const { train, destination } = nearestTrainToPickUp;
-        this.moveTrain(train, destination);
+        if (destination.cumulativeDistance) {
+            this.moveTrain(train, destination);
+        }
         // packages should only be picked up by the train on the next move
         train.packagesToPickUp.push(nearestTrainToPickUp.package);
         // mark package as picked up
@@ -157,15 +160,14 @@ class Navigation {
         this.moveTrain(train, destination, packagesToDeliver);
     }
     solve() {
-        let i = 0;
-        let unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp && !pack.delivered);
+        let unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
         let undeliveredPackages = this.packages.filter(pack => !pack.delivered);
-        while (undeliveredPackages.length > 0 &&
-            unpickedUpPackages.length > 0 &&
-            i++ < 10) {
+        while (undeliveredPackages.length > 0 && unpickedUpPackages.length > 0) {
             if (this.nearestTrainToPickUp) {
                 this.pickUpPackage(this.nearestTrainToPickUp);
             }
+            unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
+            undeliveredPackages = this.packages.filter(pack => !pack.delivered);
             this.findNearestPackageToPickUp(unpickedUpPackages);
             // If there is no package can be picked up, deliver first
             if (!this.nearestTrainToPickUp) {
@@ -178,7 +180,7 @@ class Navigation {
                     break;
                 }
             }
-            unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp && !pack.delivered);
+            unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
             undeliveredPackages = this.packages.filter(pack => !pack.delivered);
         }
         // console.log(this.movements);

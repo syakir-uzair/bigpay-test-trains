@@ -57,8 +57,8 @@ export class Navigation {
     );
   }
 
-  findNearestPackageToPickUp(undeliveredPackages: Package[]) {
-    for (const pack of undeliveredPackages) {
+  findNearestPackageToPickUp(unpickedUpPackages: Package[]) {
+    for (const pack of unpickedUpPackages) {
       // Ensure that the trains have the capacity
       const capableTrains = this.getCapableTrains(pack.weight);
       for (const train of capableTrains) {
@@ -187,7 +187,9 @@ export class Navigation {
 
   pickUpPackage(nearestTrainToPickUp: TrainPickUpQueue) {
     const {train, destination} = nearestTrainToPickUp;
-    this.moveTrain(train, destination);
+    if (destination.cumulativeDistance) {
+      this.moveTrain(train, destination);
+    }
     // packages should only be picked up by the train on the next move
     train.packagesToPickUp.push(nearestTrainToPickUp.package);
     // mark package as picked up
@@ -205,20 +207,16 @@ export class Navigation {
   }
 
   solve(): Output {
-    let i = 0;
-    let unpickedUpPackages = this.packages.filter(
-      pack => !pack.pickedUp && !pack.delivered
-    );
+    let unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
     let undeliveredPackages = this.packages.filter(pack => !pack.delivered);
 
-    while (
-      undeliveredPackages.length > 0 &&
-      unpickedUpPackages.length > 0 &&
-      i++ < 10
-    ) {
+    while (undeliveredPackages.length > 0 && unpickedUpPackages.length > 0) {
       if (this.nearestTrainToPickUp) {
         this.pickUpPackage(this.nearestTrainToPickUp);
       }
+
+      unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
+      undeliveredPackages = this.packages.filter(pack => !pack.delivered);
 
       this.findNearestPackageToPickUp(unpickedUpPackages);
 
@@ -234,9 +232,7 @@ export class Navigation {
         }
       }
 
-      unpickedUpPackages = this.packages.filter(
-        pack => !pack.pickedUp && !pack.delivered
-      );
+      unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
       undeliveredPackages = this.packages.filter(pack => !pack.delivered);
     }
 

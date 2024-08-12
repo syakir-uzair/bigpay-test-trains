@@ -50,7 +50,7 @@ class Graph {
         minHeap.add({ to: start, distance: 0 });
         while (minHeap.heap.length) {
             const min = minHeap.remove();
-            // typescript undefined handling
+            // ts undefined handling
             if (!min) {
                 break;
             }

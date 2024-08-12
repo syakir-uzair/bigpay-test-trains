@@ -57,6 +57,26 @@ const testCases = [
         expectedOutput: [],
     },
     {
+        title: 'Should deliver multiple packages if capacity is sufficient',
+        input: {
+            edges: [
+                { from: 'A', to: 'B', distance: 30 },
+                { from: 'B', to: 'C', distance: 10 },
+            ],
+            packages: [
+                { name: 'K1', weight: 5, from: 'A', to: 'C' },
+                { name: 'K2', weight: 5, from: 'A', to: 'C' },
+                { name: 'K3', weight: 5, from: 'A', to: 'C' },
+            ],
+            trains: [{ name: 'Q1', capacity: 15, start: 'B' }],
+        },
+        expectedOutput: [
+            { W: 0, T: 'Q1', N1: 'B', P1: [], N2: 'A', P2: [] },
+            { W: 30, T: 'Q1', N1: 'A', P1: ['K1', 'K2', 'K3'], N2: 'B', P2: [] },
+            { W: 60, T: 'Q1', N1: 'B', P1: [], N2: 'C', P2: ['K1', 'K2', 'K3'] },
+        ],
+    },
+    {
         title: 'Should utilize fastest route even with more checkpoints',
         input: {
             edges: [
