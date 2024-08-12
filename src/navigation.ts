@@ -29,16 +29,37 @@ export class Navigation {
     const trains: Train[] = input.trains.map(train => ({
       ...train,
       currentLocation: train.start,
+      totalDistance: 0,
       packagesToPickUp: [],
       packagesPickedUp: [],
       packagesDelivered: [],
     }));
+
+    // sort trains from most capacity to least
+    trains.sort((a, b) => {
+      if (a.capacity > b.capacity) {
+        return -1;
+      } else if (a.capacity === b.capacity) {
+        return 0;
+      }
+      return 1;
+    });
 
     const packages: Package[] = input.packages.map(pack => ({
       ...pack,
       pickedUp: false,
       delivered: false,
     }));
+
+    // sort packages from heaviest to lightest
+    packages.sort((a, b) => {
+      if (a.weight > b.weight) {
+        return -1;
+      } else if (a.weight === b.weight) {
+        return 0;
+      }
+      return 1;
+    });
 
     this.graph = graph;
     this.trains = trains;
@@ -56,7 +77,45 @@ export class Navigation {
     });
   }
 
+  getTrainTotalDistanceToCover(train: Train, pack: Package): number {
+    const packagesPool: Map<string, Package> = new Map();
+    packagesPool.set(pack.name, pack);
+    for (const pack of [...train.packagesToPickUp, ...train.packagesPickedUp]) {
+      packagesPool.set(pack.name, pack);
+    }
+    let totalDistance = train.totalDistance;
+    let currentLocation = train.currentLocation;
+    const destination = this.graph.getDestination(
+      train.currentLocation,
+      pack.from
+    );
+    totalDistance += destination.cumulativeDistance;
+    currentLocation = pack.from;
+
+    while (packagesPool.size) {
+      let minDistance = Infinity;
+      let minDistancePackage: Package | null = null;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for (const [_, pack] of packagesPool) {
+        const destination = this.graph.getDestination(currentLocation, pack.to);
+
+        if (destination.cumulativeDistance < minDistance) {
+          minDistance = destination.cumulativeDistance;
+          minDistancePackage = pack;
+        }
+      }
+
+      if (minDistancePackage) {
+        packagesPool.delete(minDistancePackage.name);
+        currentLocation = minDistancePackage.to;
+        totalDistance += minDistance;
+      }
+    }
+    return totalDistance;
+  }
+
   findNextPackageToPickUp() {
+    let minDistance = Infinity;
     for (const pack of this.packages) {
       if (pack.pickedUp || pack.delivered) {
         continue;
@@ -65,17 +124,17 @@ export class Navigation {
       // Ensure that the trains have the capacity
       const capableTrains = this.getCapableTrains(pack.weight);
       for (const train of capableTrains) {
-        const destination = this.graph.getDestination(
-          train.currentLocation,
-          pack.from
+        const totalDistanceToCover = this.getTrainTotalDistanceToCover(
+          train,
+          pack
         );
 
-        const cumulativeDistance = destination?.cumulativeDistance ?? 0;
-        if (
-          this.bestTrainToPickUp === null ||
-          cumulativeDistance <
-            this.bestTrainToPickUp.destination.cumulativeDistance
-        ) {
+        if (totalDistanceToCover < minDistance) {
+          minDistance = totalDistanceToCover;
+          const destination = this.graph.getDestination(
+            train.currentLocation,
+            pack.from
+          );
           this.bestTrainToPickUp = {
             train,
             package: pack,
@@ -87,6 +146,7 @@ export class Navigation {
   }
 
   findNearestDestinationToDeliver() {
+    let minDistance = Infinity;
     for (const train of this.trains) {
       for (const packageToDeliver of [
         ...train.packagesToPickUp,
@@ -96,13 +156,8 @@ export class Navigation {
           train.currentLocation,
           packageToDeliver.to
         );
-
-        const cumulativeDistance = destination?.cumulativeDistance ?? 0;
-        if (
-          this.nearestDestinationToDeliver === null ||
-          cumulativeDistance <
-            this.nearestDestinationToDeliver.destination.cumulativeDistance
-        ) {
+        if (destination.cumulativeDistance < minDistance) {
+          minDistance = destination.cumulativeDistance;
           this.nearestDestinationToDeliver = {
             train,
             destination,
@@ -145,27 +200,25 @@ export class Navigation {
       packagesPickedUp,
       packagesDelivered: [],
     });
-    if (checkpoints.length) {
-      for (let i = 0; i < checkpoints.length; i++) {
-        startTime = endTime;
-        endTime =
-          startTime +
-          (i < checkpoints.length - 1
-            ? checkpoints[i + 1].distance
-            : destination.distance);
-        this.movements.push({
-          startTime,
-          endTime,
-          train,
-          from: checkpoints[i].to,
-          to:
-            i < checkpoints.length - 1 ? checkpoints[i + 1].to : destination.to,
-          packagesPickedUp: [],
-          packagesDelivered: [],
-        });
-      }
+    for (let i = 0; i < checkpoints.length; i++) {
+      startTime = endTime;
+      endTime =
+        startTime +
+        (i < checkpoints.length - 1
+          ? checkpoints[i + 1].distance
+          : destination.distance);
+      this.movements.push({
+        startTime,
+        endTime,
+        train,
+        from: checkpoints[i].to,
+        to: i < checkpoints.length - 1 ? checkpoints[i + 1].to : destination.to,
+        packagesPickedUp: [],
+        packagesDelivered: [],
+      });
     }
     train.currentLocation = destination.to;
+    train.totalDistance = destination.cumulativeDistance;
 
     if (packagesToDeliver.length) {
       this.movements[this.movements.length - 1].packagesDelivered =
@@ -203,17 +256,16 @@ export class Navigation {
   }
 
   calculate() {
-    let unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
     let undeliveredPackages = this.packages.filter(pack => !pack.delivered);
 
-    while (undeliveredPackages.length > 0 && unpickedUpPackages.length > 0) {
+    while (undeliveredPackages.length > 0) {
       if (this.bestTrainToPickUp) {
         this.pickUpPackage(this.bestTrainToPickUp);
       }
 
       this.findNextPackageToPickUp();
 
-      // If there is no package can be picked up, deliver first
+      // If there are no packages that can be picked up, deliver first
       if (!this.bestTrainToPickUp) {
         this.findNearestDestinationToDeliver();
 
@@ -225,7 +277,6 @@ export class Navigation {
         }
       }
 
-      unpickedUpPackages = this.packages.filter(pack => !pack.pickedUp);
       undeliveredPackages = this.packages.filter(pack => !pack.delivered);
     }
   }

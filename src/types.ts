@@ -16,6 +16,7 @@ export type Train = {
   start: string;
   currentLocation: string;
   capacity: number;
+  totalDistance: number;
   packagesToPickUp: Package[];
   packagesPickedUp: Package[];
   packagesDelivered: Package[];

@@ -5,7 +5,7 @@ const assert = require('node:assert');
 
 const testCases: TestCase[] = [
   {
-    title: 'Basic case',
+    title: 'Should pass basic case',
     input: {
       edges: [
         {from: 'A', to: 'B', distance: 30},
@@ -21,7 +21,7 @@ const testCases: TestCase[] = [
     ],
   },
   {
-    title: 'Invalid package starting location',
+    title: 'Should handle invalid package starting location',
     input: {
       edges: [
         {from: 'A', to: 'B', distance: 30},
@@ -33,7 +33,7 @@ const testCases: TestCase[] = [
     expectedOutput: [],
   },
   {
-    title: 'Invalid package destination',
+    title: 'Should handle invalid package destination',
     input: {
       edges: [
         {from: 'A', to: 'B', distance: 30},
@@ -45,7 +45,7 @@ const testCases: TestCase[] = [
     expectedOutput: [],
   },
   {
-    title: 'Insufficient train capacity',
+    title: 'Should handle insufficient train capacity',
     input: {
       edges: [
         {from: 'A', to: 'B', distance: 30},
@@ -96,6 +96,38 @@ const testCases: TestCase[] = [
       {W: 30, T: 'Q1', N1: 'A', P1: ['K1'], N2: 'C', P2: []},
       {W: 40, T: 'Q1', N1: 'C', P1: [], N2: 'B', P2: []},
       {W: 60, T: 'Q1', N1: 'B', P1: [], N2: 'D', P2: ['K1']},
+    ],
+  },
+  {
+    title:
+      'Should utilize multiple trains in parallel for fastest delivery (6-way crossroads shape)',
+    input: {
+      edges: [
+        {from: 'A', to: 'X', distance: 10},
+        {from: 'B', to: 'X', distance: 10},
+        {from: 'C', to: 'X', distance: 10},
+        {from: 'D', to: 'X', distance: 10},
+        {from: 'E', to: 'X', distance: 10},
+        {from: 'F', to: 'X', distance: 10},
+      ],
+      packages: [
+        {name: 'K1', weight: 5, from: 'X', to: 'D'},
+        {name: 'K2', weight: 5, from: 'X', to: 'E'},
+        {name: 'K3', weight: 5, from: 'X', to: 'F'},
+      ],
+      trains: [
+        {name: 'Q1', capacity: 15, start: 'A'},
+        {name: 'Q2', capacity: 15, start: 'B'},
+        {name: 'Q3', capacity: 15, start: 'C'},
+      ],
+    },
+    expectedOutput: [
+      {W: 0, T: 'Q1', N1: 'A', P1: [], N2: 'X', P2: []},
+      {W: 0, T: 'Q2', N1: 'B', P1: [], N2: 'X', P2: []},
+      {W: 0, T: 'Q3', N1: 'C', P1: [], N2: 'X', P2: []},
+      {W: 10, T: 'Q1', N1: 'X', P1: ['K1'], N2: 'D', P2: ['K1']},
+      {W: 10, T: 'Q2', N1: 'X', P1: ['K2'], N2: 'E', P2: ['K2']},
+      {W: 10, T: 'Q3', N1: 'X', P1: ['K3'], N2: 'F', P2: ['K3']},
     ],
   },
 ];
