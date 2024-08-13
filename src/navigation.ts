@@ -182,43 +182,46 @@ export class Navigation {
     let endTime =
       startTime +
       (checkpoints.length ? checkpoints[0].distance : destination.distance);
-    let packagesPickedUp: Package[] = [];
 
+    let packagesPickedUp: Package[] = [];
     if (train.packagesToPickUp.length) {
       // pick up package(s) scheduled in that location
-      packagesPickedUp = train.packagesToPickUp;
+      packagesPickedUp = [...train.packagesPickedUp, ...train.packagesToPickUp];
       train.packagesPickedUp = packagesPickedUp;
       train.packagesToPickUp = [];
     }
 
-    this.movements.push({
-      startTime,
-      endTime,
-      train,
-      from: destination.from,
-      to: checkpoints.length ? checkpoints[0].to : destination.to,
-      packagesPickedUp,
-      packagesDelivered: [],
-    });
-    for (let i = 0; i < checkpoints.length; i++) {
-      startTime = endTime;
-      endTime =
-        startTime +
-        (i < checkpoints.length - 1
-          ? checkpoints[i + 1].distance
-          : destination.distance);
+    if (destination.cumulativeDistance) {
       this.movements.push({
         startTime,
         endTime,
         train,
-        from: checkpoints[i].to,
-        to: i < checkpoints.length - 1 ? checkpoints[i + 1].to : destination.to,
-        packagesPickedUp: [],
+        from: destination.from,
+        to: checkpoints.length ? checkpoints[0].to : destination.to,
+        packagesPickedUp,
         packagesDelivered: [],
       });
+      for (let i = 0; i < checkpoints.length; i++) {
+        startTime = endTime;
+        endTime =
+          startTime +
+          (i < checkpoints.length - 1
+            ? checkpoints[i + 1].distance
+            : destination.distance);
+        this.movements.push({
+          startTime,
+          endTime,
+          train,
+          from: checkpoints[i].to,
+          to:
+            i < checkpoints.length - 1 ? checkpoints[i + 1].to : destination.to,
+          packagesPickedUp: [],
+          packagesDelivered: [],
+        });
+      }
+      train.currentLocation = destination.to;
+      train.totalDistance += destination.cumulativeDistance;
     }
-    train.currentLocation = destination.to;
-    train.totalDistance = destination.cumulativeDistance;
 
     if (packagesToDeliver.length) {
       this.movements[this.movements.length - 1].packagesDelivered =
@@ -236,9 +239,7 @@ export class Navigation {
 
   pickUpPackage(bestTrainToPickUp: TrainPickUpQueue) {
     const {train, destination} = bestTrainToPickUp;
-    if (destination.cumulativeDistance) {
-      this.moveTrain(train, destination);
-    }
+    this.moveTrain(train, destination);
     // packages should only be picked up by the train on the next move
     train.packagesToPickUp.push(bestTrainToPickUp.package);
     // mark package as picked up
@@ -249,8 +250,8 @@ export class Navigation {
   deliverPackage(nearestDestinationToDeliver: TrainDeliverQueue) {
     const {train, destination} = nearestDestinationToDeliver;
     const packagesToDeliver = [
-      ...train.packagesToPickUp,
       ...train.packagesPickedUp,
+      ...train.packagesToPickUp,
     ].filter(pack => pack.to === destination.to);
     this.moveTrain(train, destination, packagesToDeliver);
   }
@@ -259,23 +260,50 @@ export class Navigation {
     let undeliveredPackages = this.packages.filter(pack => !pack.delivered);
 
     while (undeliveredPackages.length > 0) {
-      if (this.bestTrainToPickUp) {
-        this.pickUpPackage(this.bestTrainToPickUp);
-      }
-
       this.findNextPackageToPickUp();
+      this.findNearestDestinationToDeliver();
 
-      // If there are no packages that can be picked up, deliver first
-      if (!this.bestTrainToPickUp) {
-        this.findNearestDestinationToDeliver();
-
-        if (this.nearestDestinationToDeliver) {
-          this.deliverPackage(this.nearestDestinationToDeliver);
+      // console.log('-------', this.bestTrainToPickUp);
+      // console.log('=======', this.nearestDestinationToDeliver);
+      if (this.bestTrainToPickUp && this.nearestDestinationToDeliver) {
+        if (
+          this.bestTrainToPickUp.destination.cumulativeDistance <=
+          this.nearestDestinationToDeliver.destination.cumulativeDistance
+        ) {
+          this.pickUpPackage(this.bestTrainToPickUp);
         } else {
-          // something is wrong, break out of the loop
-          break;
+          this.deliverPackage(this.nearestDestinationToDeliver);
         }
+      } else if (this.bestTrainToPickUp) {
+        this.pickUpPackage(this.bestTrainToPickUp);
+      } else if (this.nearestDestinationToDeliver) {
+        this.deliverPackage(this.nearestDestinationToDeliver);
+      } else {
+        // something is wrong, break out of the loop
+        break;
       }
+
+      //reset queue
+      this.bestTrainToPickUp = null;
+      this.nearestDestinationToDeliver = null;
+
+      // if (this.bestTrainToPickUp) {
+      //   this.pickUpPackage(this.bestTrainToPickUp);
+      // }
+
+      // this.findNextPackageToPickUp();
+
+      // // If there are no packages that can be picked up, deliver first
+      // if (!this.bestTrainToPickUp) {
+      //   this.findNearestDestinationToDeliver();
+
+      //   if (this.nearestDestinationToDeliver) {
+      //     this.deliverPackage(this.nearestDestinationToDeliver);
+      //   } else {
+      //     // something is wrong, break out of the loop
+      //     break;
+      //   }
+      // }
 
       undeliveredPackages = this.packages.filter(pack => !pack.delivered);
     }

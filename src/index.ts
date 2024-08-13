@@ -145,25 +145,26 @@ const testCases: TestCase[] = [
         {name: 'K2', weight: 5, from: 'X', to: 'D'},
       ],
       trains: [
-        {name: 'Q1', capacity: 10, start: 'A'},
-        {name: 'Q2', capacity: 10, start: 'B'},
+        {name: 'Q1', capacity: 5, start: 'A'},
+        {name: 'Q2', capacity: 5, start: 'B'},
       ],
     },
     expectedOutput: [
       {W: 0, T: 'Q2', N1: 'B', P1: [], N2: 'X', P2: []},
-      {W: 10, T: 'Q2', N1: 'X', P1: ['K1', 'K2'], N2: 'C', P2: ['K1']},
+      {W: 10, T: 'Q2', N1: 'X', P1: ['K1'], N2: 'C', P2: ['K1']},
       {W: 20, T: 'Q2', N1: 'C', P1: [], N2: 'X', P2: []},
-      {W: 30, T: 'Q2', N1: 'X', P1: [], N2: 'D', P2: ['K2']},
+      {W: 30, T: 'Q2', N1: 'X', P1: ['K2'], N2: 'D', P2: ['K2']},
     ],
   },
 ];
 
 function test() {
+  let i = 0;
   for (const testCase of testCases) {
     let solution: Output | null = null;
 
     try {
-      console.log('Running test case for:', testCase.title);
+      console.log(`Running test case ${i} for:`, testCase.title);
       const nav = new Navigation(testCase.input);
       solution = nav.solve();
       assert.deepEqual(solution, testCase.expectedOutput, testCase.title);
@@ -173,6 +174,8 @@ function test() {
       console.log('Expected:', testCase.expectedOutput);
       console.log('Received:', solution);
     }
+
+    i++;
   }
 }
 
