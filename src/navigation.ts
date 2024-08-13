@@ -224,12 +224,14 @@ export class Navigation {
     }
 
     if (packagesToDeliver.length) {
-      this.movements[this.movements.length - 1].packagesDelivered =
-        packagesToDeliver;
+      this.movements[this.movements.length - 1].packagesDelivered = [
+        ...packagesToDeliver,
+      ];
       train.packagesPickedUp = train.packagesPickedUp.filter(
         pack => !packagesToDeliver.includes(pack)
       );
-      train.packagesDelivered.concat(packagesToDeliver);
+      train.packagesDelivered =
+        train.packagesDelivered.concat(packagesToDeliver);
 
       for (const pack of packagesToDeliver) {
         pack.delivered = true;
