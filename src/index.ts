@@ -68,12 +68,17 @@ const testCases: TestCase[] = [
         {name: 'K2', weight: 5, from: 'A', to: 'C'},
         {name: 'K3', weight: 5, from: 'A', to: 'C'},
       ],
-      trains: [{name: 'Q1', capacity: 15, start: 'B'}],
+      trains: [
+        {name: 'Q1', capacity: 5, start: 'B'},
+        // Q2 should be picked for the job
+        {name: 'Q2', capacity: 15, start: 'B'},
+        {name: 'Q3', capacity: 5, start: 'B'},
+      ],
     },
     expectedOutput: [
-      {W: 0, T: 'Q1', N1: 'B', P1: [], N2: 'A', P2: []},
-      {W: 30, T: 'Q1', N1: 'A', P1: ['K1', 'K2', 'K3'], N2: 'B', P2: []},
-      {W: 60, T: 'Q1', N1: 'B', P1: [], N2: 'C', P2: ['K1', 'K2', 'K3']},
+      {W: 0, T: 'Q2', N1: 'B', P1: [], N2: 'A', P2: []},
+      {W: 30, T: 'Q2', N1: 'A', P1: ['K1', 'K2', 'K3'], N2: 'B', P2: []},
+      {W: 60, T: 'Q2', N1: 'B', P1: [], N2: 'C', P2: ['K1', 'K2', 'K3']},
     ],
   },
   {
