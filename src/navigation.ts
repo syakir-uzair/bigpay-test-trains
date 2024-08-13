@@ -263,8 +263,6 @@ export class Navigation {
       this.findNextPackageToPickUp();
       this.findNearestDestinationToDeliver();
 
-      // console.log('-------', this.bestTrainToPickUp);
-      // console.log('=======', this.nearestDestinationToDeliver);
       if (this.bestTrainToPickUp && this.nearestDestinationToDeliver) {
         if (
           this.bestTrainToPickUp.destination.cumulativeDistance <=
@@ -286,24 +284,6 @@ export class Navigation {
       //reset queue
       this.bestTrainToPickUp = null;
       this.nearestDestinationToDeliver = null;
-
-      // if (this.bestTrainToPickUp) {
-      //   this.pickUpPackage(this.bestTrainToPickUp);
-      // }
-
-      // this.findNextPackageToPickUp();
-
-      // // If there are no packages that can be picked up, deliver first
-      // if (!this.bestTrainToPickUp) {
-      //   this.findNearestDestinationToDeliver();
-
-      //   if (this.nearestDestinationToDeliver) {
-      //     this.deliverPackage(this.nearestDestinationToDeliver);
-      //   } else {
-      //     // something is wrong, break out of the loop
-      //     break;
-      //   }
-      // }
 
       undeliveredPackages = this.packages.filter(pack => !pack.delivered);
     }
