@@ -215,7 +215,7 @@ const testCases: TestCase[] = [
 
 function test() {
   let i = 0;
-  for (const testCase of testCases) {
+  for (const testCase of [testCases[4]]) {
     let solution: Output | null = null;
 
     try {

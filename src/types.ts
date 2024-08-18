@@ -17,9 +17,9 @@ export type Train = {
   currentLocation: string;
   capacity: number;
   totalDistance: number;
-  packagesToPickUp: Package[];
-  packagesPickedUp: Package[];
-  packagesDelivered: Package[];
+  packagesToPickUp: string[];
+  packagesPickedUp: string[];
+  packagesDelivered: string[];
 };
 
 export type Package = {
@@ -27,29 +27,32 @@ export type Package = {
   from: string;
   to: string;
   weight: number;
-  pickedUp: boolean;
-  delivered: boolean;
+  toBePickedUpBy: string;
+  pickedUpBy: string;
+  deliveredBy: string;
+  // pickedUp: boolean;
+  // delivered: boolean;
 };
 
-export type TrainPickUpQueue = {
-  train: Train;
-  package: Package;
-  destination: Destination;
-};
+// export type TrainPickUpQueue = {
+//   train: Train;
+//   package: Package;
+//   destination: Destination;
+// };
 
-export type TrainDeliverQueue = {
-  train: Train;
-  destination: Destination;
-};
+// export type TrainDeliverQueue = {
+//   train: Train;
+//   destination: Destination;
+// };
 
 export type Movement = {
   startTime: number;
   endTime: number;
-  train: Train;
   from: string;
   to: string;
-  packagesPickedUp: Package[];
-  packagesDelivered: Package[];
+  train: string;
+  packagesPickedUp: string[];
+  packagesDelivered: string[];
 };
 
 export type Input = {
