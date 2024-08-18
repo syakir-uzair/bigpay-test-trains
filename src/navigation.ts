@@ -117,10 +117,7 @@ export class Navigation {
     ];
     if (newPackagesPickedUp.length) {
       // pick up package(s) scheduled in that location
-      train.packagesPickedUp = [
-        ...train.packagesPickedUp,
-        ...train.packagesToPickUp,
-      ];
+      train.packagesPickedUp = newPackagesPickedUp;
       train.packagesToPickUp = [];
 
       for (const packageName of newPackagesPickedUp) {
@@ -211,7 +208,6 @@ export class Navigation {
     let totalCombinations = 0;
 
     for (const [, pack] of packages) {
-      // console.log('------- package first check', pack);
       if (pack.toBePickedUpBy || pack.pickedUpBy || pack.deliveredBy) {
         continue;
       }
@@ -311,7 +307,6 @@ export class Navigation {
     try {
       const movements = this.calculate(this.trains, this.packages, []);
 
-      // console.log(this.movements);
       return movements.map(mv => ({
         W: mv.startTime,
         T: mv.train,
@@ -321,7 +316,7 @@ export class Navigation {
         P2: mv.packagesDelivered,
       }));
     } catch (e) {
-      console.log(e);
+      // console.log(e);
 
       return [];
     }

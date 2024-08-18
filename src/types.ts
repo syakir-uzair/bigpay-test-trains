@@ -30,20 +30,7 @@ export type Package = {
   toBePickedUpBy: string;
   pickedUpBy: string;
   deliveredBy: string;
-  // pickedUp: boolean;
-  // delivered: boolean;
 };
-
-// export type TrainPickUpQueue = {
-//   train: Train;
-//   package: Package;
-//   destination: Destination;
-// };
-
-// export type TrainDeliverQueue = {
-//   train: Train;
-//   destination: Destination;
-// };
 
 export type Movement = {
   startTime: number;
