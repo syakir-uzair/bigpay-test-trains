@@ -5,6 +5,7 @@ export class Navigation {
   public graph: Graph = new Graph();
   public trains: Map<string, Train> = new Map();
   public packages: Map<string, Package> = new Map();
+  public cache: Map<string, Movement[]> = new Map();
 
   constructor(input: Input) {
     for (const edge of input.edges) {
@@ -30,6 +31,51 @@ export class Navigation {
         deliveredBy: '',
       });
     }
+  }
+
+  getCacheKey(trains: Map<string, Train>, packages: Map<string, Package>) {
+    const trainLocations: {train: string; location: string}[] = [];
+    for (const [trainName, train] of trains) {
+      trainLocations.push({
+        train: trainName,
+        location: train.currentLocation,
+      });
+    }
+    trainLocations.sort((a, b) => {
+      if (a.train > b.train) {
+        return 1;
+      } else if (a.train < b.train) {
+        return -1;
+      }
+      return 0;
+    });
+
+    const packageTrains: {package: string; train: string}[] = [];
+    for (const [packageName, pack] of packages) {
+      if (pack.deliveredBy) {
+        continue;
+      }
+      packageTrains.push({
+        package: packageName,
+        train: pack.toBePickedUpBy || pack.pickedUpBy,
+      });
+    }
+    packageTrains.sort((a, b) => {
+      if (a.package > b.package) {
+        return 1;
+      } else if (a.package < b.package) {
+        return -1;
+      }
+      return 0;
+    });
+
+    const trainLocationsCacheKey = trainLocations
+      .map(item => `${item.train}:${item.location}`)
+      .join(',');
+    const packageTrainsCacheKey = packageTrains
+      .map(item => `${item.package}:${item.train}`)
+      .join(',');
+    return `${trainLocationsCacheKey};${packageTrainsCacheKey}`;
   }
 
   cloneTrains(trains: Map<string, Train>): Map<string, Train> {
@@ -206,6 +252,10 @@ export class Navigation {
     let minDistance = Infinity;
     let bestMovements: Movement[] = movements;
     let totalCombinations = 0;
+    const cacheKey = this.getCacheKey(trains, packages);
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey) ?? [];
+    }
 
     for (const [, pack] of packages) {
       if (pack.toBePickedUpBy || pack.pickedUpBy || pack.deliveredBy) {
@@ -300,6 +350,7 @@ export class Navigation {
       }
     }
 
+    this.cache.set(cacheKey, bestMovements);
     return bestMovements;
   }
 
