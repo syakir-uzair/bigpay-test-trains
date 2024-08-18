@@ -111,16 +111,19 @@ export class Navigation {
       startTime +
       (checkpoints.length ? checkpoints[0].distance : destination.distance);
 
-    const newPackagesPickedUp: string[] = [...train.packagesToPickUp];
+    const newPackagesPickedUp: string[] = [
+      ...train.packagesPickedUp,
+      ...train.packagesToPickUp,
+    ];
     if (newPackagesPickedUp.length) {
       // pick up package(s) scheduled in that location
       train.packagesPickedUp = [
         ...train.packagesPickedUp,
-        ...newPackagesPickedUp,
+        ...train.packagesToPickUp,
       ];
       train.packagesToPickUp = [];
 
-      for (const packageName of train.packagesPickedUp) {
+      for (const packageName of newPackagesPickedUp) {
         const pack = this.getOrFail<Package>(packageName, packages);
         pack.toBePickedUpBy = '';
         pack.pickedUpBy = train.name;
@@ -165,20 +168,10 @@ export class Navigation {
       ...train.packagesPickedUp,
     ]) {
       const pack = this.getOrFail<Package>(packageName, packages);
-      // console.log(
-      //   '((((package to deliver before processing',
-      //   pack,
-      //   train.currentLocation
-      // );
       if (pack.to === train.currentLocation) {
         packagesToDeliver.push(packageName);
         pack.deliveredBy = train.name;
       }
-      // console.log(
-      //   '((((package to deliver after processing',
-      //   pack,
-      //   train.currentLocation
-      // );
     }
 
     if (packagesToDeliver.length) {
@@ -197,14 +190,22 @@ export class Navigation {
     return newMovements;
   }
 
+  getLongestDistanceInMovements(movements: Movement[]): number {
+    let longestDistance = 0;
+    for (const movement of movements) {
+      if (movement.endTime > longestDistance) {
+        longestDistance = movement.endTime;
+      }
+    }
+
+    return longestDistance;
+  }
+
   calculate(
     trains: Map<string, Train>,
     packages: Map<string, Package>,
     movements: Movement[]
-  ): {
-    totalDistance: number;
-    movements: Movement[];
-  } {
+  ): Movement[] {
     let minDistance = Infinity;
     let bestMovements: Movement[] = movements;
     let totalCombinations = 0;
@@ -221,8 +222,6 @@ export class Navigation {
         const newPackages = this.clonePackages(packages);
         const newTrain = this.getOrFail<Train>(train.name, newTrains);
         const newPackage = this.getOrFail<Package>(pack.name, newPackages);
-        // console.log('====train before pickup', newTrain);
-        // console.log('====package before pickup', newPackage);
         const destination = this.graph.getDestination(
           newTrain.currentLocation,
           newPackage.from
@@ -238,17 +237,15 @@ export class Navigation {
           newPackage.name,
         ];
         newPackage.toBePickedUpBy = newTrain.name;
-        // console.log('====movements after pickup', newMovements);
-        // console.log('====train after pickup', newTrain);
-        // console.log('====package after pickup', newPackage);
-
-        // Recursively calculate until all packages are picked up or delivered
-        const {totalDistance: additionalDistance, movements: allMovements} =
-          this.calculate(newTrains, newPackages, newMovements);
-        const newTotalDistance =
-          destination.cumulativeDistance + additionalDistance;
-        if (newTotalDistance < minDistance) {
-          minDistance = newTotalDistance;
+        const allMovements = this.calculate(
+          newTrains,
+          newPackages,
+          newMovements
+        );
+        const longestTrainDistance =
+          this.getLongestDistanceInMovements(allMovements);
+        if (longestTrainDistance < minDistance) {
+          minDistance = longestTrainDistance;
           bestMovements = [...allMovements];
         }
         totalCombinations++;
@@ -264,8 +261,6 @@ export class Navigation {
         const newPackages = this.clonePackages(packages);
         const newTrain = this.getOrFail<Train>(train.name, newTrains);
         const newPackage = this.getOrFail<Package>(packageName, newPackages);
-        // console.log('))))train before deliver', newTrain);
-        // console.log('))))package before deliver', newPackage);
         const destination = this.graph.getDestination(
           newTrain.currentLocation,
           newPackage.to
@@ -276,17 +271,15 @@ export class Navigation {
           newPackages,
           movements
         );
-        // console.log('))))movements after deliver', newMovements);
-        // console.log('))))train after deliver', newTrain);
-        // console.log('))))package after deliver', newPackage);
-
-        // Recursively calculate until all packages are picked up or delivered
-        const {totalDistance: additionalDistance, movements: allMovements} =
-          this.calculate(newTrains, newPackages, newMovements);
-        const newTotalDistance =
-          destination.cumulativeDistance + additionalDistance;
-        if (newTotalDistance < minDistance) {
-          minDistance = newTotalDistance;
+        const allMovements = this.calculate(
+          newTrains,
+          newPackages,
+          newMovements
+        );
+        const longestTrainDistance =
+          this.getLongestDistanceInMovements(allMovements);
+        if (longestTrainDistance < minDistance) {
+          minDistance = longestTrainDistance;
           bestMovements = [...allMovements];
         }
         totalCombinations++;
@@ -297,7 +290,6 @@ export class Navigation {
     if (totalCombinations === 0) {
       const undeliveredPackages: string[] = [];
       for (const [, pack] of packages) {
-        // console.log('______ 0 combo', pack);
         if (!pack.deliveredBy) {
           undeliveredPackages.push(pack.name);
         }
@@ -305,25 +297,19 @@ export class Navigation {
 
       // All packages are delivered
       if (undeliveredPackages.length === 0) {
-        return {
-          totalDistance: 0,
-          movements: bestMovements,
-        };
+        return bestMovements;
         // Or something is wrong
       } else {
         throw new Error('No solution found');
       }
     }
 
-    return {
-      totalDistance: minDistance,
-      movements: bestMovements,
-    };
+    return bestMovements;
   }
 
   solve(): Output {
     try {
-      const {movements} = this.calculate(this.trains, this.packages, []);
+      const movements = this.calculate(this.trains, this.packages, []);
 
       // console.log(this.movements);
       return movements.map(mv => ({

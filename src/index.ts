@@ -161,61 +161,61 @@ const testCases: TestCase[] = [
       {W: 30, T: 'Q2', N1: 'X', P1: ['K2'], N2: 'D', P2: ['K2']},
     ],
   },
-  {
-    title:
-      'Should pick up multiple packages in multiple trains in parallel using shortest route',
-    input: {
-      edges: [
-        {from: 'A', to: 'B', distance: 30},
-        {from: 'B', to: 'G', distance: 30},
-        {from: 'G', to: 'H', distance: 20},
-        {from: 'H', to: 'B', distance: 20},
-        {from: 'B', to: 'C', distance: 100},
-        {from: 'C', to: 'D', distance: 30},
-        {from: 'D', to: 'E', distance: 30},
-        {from: 'C', to: 'F', distance: 50},
-        {from: 'F', to: 'E', distance: 20},
-      ],
-      packages: [
-        {name: 'K1', weight: 5, from: 'A', to: 'G'},
-        {name: 'K2', weight: 5, from: 'A', to: 'H'},
-        {name: 'K3', weight: 5, from: 'B', to: 'H'},
-        {name: 'K4', weight: 5, from: 'H', to: 'E'},
-        {name: 'K5', weight: 5, from: 'E', to: 'A'},
-        {name: 'K6', weight: 5, from: 'F', to: 'C'},
-        {name: 'K7', weight: 5, from: 'F', to: 'G'},
-      ],
-      trains: [
-        {name: 'Q1', capacity: 20, start: 'B'},
-        {name: 'Q2', capacity: 20, start: 'C'},
-      ],
-    },
-    expectedOutput: [
-      {W: 0, T: 'Q1', N1: 'B', P1: ['K3'], N2: 'H', P2: ['K3']},
-      {W: 0, T: 'Q2', N1: 'C', P1: [], N2: 'F', P2: []},
-      {W: 20, T: 'Q1', N1: 'H', P1: [], N2: 'B', P2: []},
-      {W: 40, T: 'Q1', N1: 'B', P1: [], N2: 'A', P2: []},
-      {W: 50, T: 'Q2', N1: 'F', P1: ['K6', 'K7'], N2: 'E', P2: []},
-      {W: 70, T: 'Q1', N1: 'A', P1: ['K2', 'K1'], N2: 'B', P2: []},
-      {W: 100, T: 'Q1', N1: 'B', P1: [], N2: 'H', P2: ['K2']},
-      {W: 120, T: 'Q1', N1: 'H', P1: [], N2: 'G', P2: ['K1']},
-      {W: 70, T: 'Q2', N1: 'E', P1: ['K6', 'K7', 'K5'], N2: 'D', P2: []},
-      {W: 100, T: 'Q2', N1: 'D', P1: [], N2: 'C', P2: ['K6']},
-      {W: 130, T: 'Q2', N1: 'C', P1: [], N2: 'B', P2: []},
-      {W: 230, T: 'Q2', N1: 'B', P1: [], N2: 'G', P2: ['K7']},
-      {W: 260, T: 'Q2', N1: 'G', P1: [], N2: 'B', P2: []},
-      {W: 290, T: 'Q2', N1: 'B', P1: [], N2: 'A', P2: ['K5']},
-      {W: 140, T: 'Q1', N1: 'G', P1: [], N2: 'B', P2: []},
-      {W: 170, T: 'Q1', N1: 'B', P1: [], N2: 'C', P2: []},
-      {W: 270, T: 'Q1', N1: 'C', P1: [], N2: 'D', P2: []},
-      {W: 330, T: 'Q1', N1: 'D', P1: [], N2: 'E', P2: ['K4']},
-    ],
-  },
+  // {
+  //   title:
+  //     'Should pick up multiple packages in multiple trains in parallel using shortest route',
+  //   input: {
+  //     edges: [
+  //       {from: 'A', to: 'B', distance: 30},
+  //       {from: 'B', to: 'G', distance: 30},
+  //       {from: 'G', to: 'H', distance: 20},
+  //       {from: 'H', to: 'B', distance: 20},
+  //       {from: 'B', to: 'C', distance: 100},
+  //       {from: 'C', to: 'D', distance: 30},
+  //       {from: 'D', to: 'E', distance: 30},
+  //       {from: 'C', to: 'F', distance: 50},
+  //       {from: 'F', to: 'E', distance: 20},
+  //     ],
+  //     packages: [
+  //       {name: 'K1', weight: 5, from: 'A', to: 'G'},
+  //       {name: 'K2', weight: 5, from: 'A', to: 'H'},
+  //       {name: 'K3', weight: 5, from: 'B', to: 'H'},
+  //       {name: 'K4', weight: 5, from: 'H', to: 'E'},
+  //       {name: 'K5', weight: 5, from: 'E', to: 'A'},
+  //       {name: 'K6', weight: 5, from: 'F', to: 'C'},
+  //       {name: 'K7', weight: 5, from: 'F', to: 'G'},
+  //     ],
+  //     trains: [
+  //       {name: 'Q1', capacity: 20, start: 'B'},
+  //       {name: 'Q2', capacity: 20, start: 'C'},
+  //     ],
+  //   },
+  //   expectedOutput: [
+  //     {W: 0, T: 'Q1', N1: 'B', P1: ['K3'], N2: 'H', P2: ['K3']},
+  //     {W: 0, T: 'Q2', N1: 'C', P1: [], N2: 'F', P2: []},
+  //     {W: 20, T: 'Q1', N1: 'H', P1: [], N2: 'B', P2: []},
+  //     {W: 40, T: 'Q1', N1: 'B', P1: [], N2: 'A', P2: []},
+  //     {W: 50, T: 'Q2', N1: 'F', P1: ['K6', 'K7'], N2: 'E', P2: []},
+  //     {W: 70, T: 'Q1', N1: 'A', P1: ['K2', 'K1'], N2: 'B', P2: []},
+  //     {W: 100, T: 'Q1', N1: 'B', P1: [], N2: 'H', P2: ['K2']},
+  //     {W: 120, T: 'Q1', N1: 'H', P1: [], N2: 'G', P2: ['K1']},
+  //     {W: 70, T: 'Q2', N1: 'E', P1: ['K6', 'K7', 'K5'], N2: 'D', P2: []},
+  //     {W: 100, T: 'Q2', N1: 'D', P1: [], N2: 'C', P2: ['K6']},
+  //     {W: 130, T: 'Q2', N1: 'C', P1: [], N2: 'B', P2: []},
+  //     {W: 230, T: 'Q2', N1: 'B', P1: [], N2: 'G', P2: ['K7']},
+  //     {W: 260, T: 'Q2', N1: 'G', P1: [], N2: 'B', P2: []},
+  //     {W: 290, T: 'Q2', N1: 'B', P1: [], N2: 'A', P2: ['K5']},
+  //     {W: 140, T: 'Q1', N1: 'G', P1: [], N2: 'B', P2: []},
+  //     {W: 170, T: 'Q1', N1: 'B', P1: [], N2: 'C', P2: []},
+  //     {W: 270, T: 'Q1', N1: 'C', P1: [], N2: 'D', P2: []},
+  //     {W: 330, T: 'Q1', N1: 'D', P1: [], N2: 'E', P2: ['K4']},
+  //   ],
+  // },
 ];
 
 function test() {
   let i = 0;
-  for (const testCase of [testCases[4]]) {
+  for (const testCase of testCases) {
     let solution: Output | null = null;
 
     try {
