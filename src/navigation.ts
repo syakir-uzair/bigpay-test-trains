@@ -147,6 +147,38 @@ export class Navigation {
     return capableTrains;
   }
 
+  getPackagesToDeliver(
+    train: Train,
+    packages: Map<string, Package>,
+    to: string
+  ) {
+    const packagesToDeliver: string[] = [];
+
+    for (const packageName of [
+      ...train.packagesToPickUp,
+      ...train.packagesPickedUp,
+    ]) {
+      const pack = this.getOrFail<Package>(packageName, packages);
+      if (pack.to === to) {
+        packagesToDeliver.push(packageName);
+        pack.pickedUpBy = '';
+        pack.deliveredBy = train.name;
+      }
+    }
+
+    if (packagesToDeliver.length) {
+      train.packagesPickedUp = train.packagesPickedUp.filter(
+        pack => !packagesToDeliver.includes(pack)
+      );
+      train.packagesDelivered = [
+        ...train.packagesDelivered,
+        ...packagesToDeliver,
+      ];
+    }
+
+    return packagesToDeliver;
+  }
+
   moveTrain(
     train: Train,
     destination: Destination,
@@ -174,7 +206,7 @@ export class Navigation {
         // pick up package(s) scheduled in that location
         train.packagesPickedUp = [
           ...train.packagesPickedUp,
-          ...train.packagesToPickUp,
+          ...newPackagesPickedUp,
         ];
         train.packagesToPickUp = [];
 
@@ -185,14 +217,16 @@ export class Navigation {
         }
       }
 
+      const to = checkpoints.length ? checkpoints[0].to : destination.to;
+      const packagesToDeliver = this.getPackagesToDeliver(train, packages, to);
       newMovements.push({
         startTime,
         endTime,
         train: train.name,
         from: destination.from,
-        to: checkpoints.length ? checkpoints[0].to : destination.to,
+        to,
         packagesPickedUp: newPackagesPickedUp,
-        packagesDelivered: [],
+        packagesDelivered: packagesToDeliver,
       });
       for (let i = 0; i < checkpoints.length; i++) {
         startTime = endTime;
@@ -201,44 +235,25 @@ export class Navigation {
           (i < checkpoints.length - 1
             ? checkpoints[i + 1].distance
             : destination.distance);
+        const to =
+          i < checkpoints.length - 1 ? checkpoints[i + 1].to : destination.to;
+        const packagesToDeliver = this.getPackagesToDeliver(
+          train,
+          packages,
+          to
+        );
         newMovements.push({
           startTime,
           endTime,
           train: train.name,
           from: checkpoints[i].to,
-          to:
-            i < checkpoints.length - 1 ? checkpoints[i + 1].to : destination.to,
+          to,
           packagesPickedUp: [],
-          packagesDelivered: [],
+          packagesDelivered: packagesToDeliver,
         });
       }
       train.currentLocation = destination.to;
       train.totalDistance += destination.cumulativeDistance;
-    }
-
-    const packagesToDeliver: string[] = [];
-    for (const packageName of [
-      ...train.packagesToPickUp,
-      ...train.packagesPickedUp,
-    ]) {
-      const pack = this.getOrFail<Package>(packageName, packages);
-      if (pack.to === train.currentLocation) {
-        packagesToDeliver.push(packageName);
-        pack.deliveredBy = train.name;
-      }
-    }
-
-    if (packagesToDeliver.length) {
-      newMovements[newMovements.length - 1].packagesDelivered = [
-        ...packagesToDeliver,
-      ];
-      train.packagesPickedUp = train.packagesPickedUp.filter(
-        pack => !packagesToDeliver.includes(pack)
-      );
-      train.packagesDelivered = [
-        ...train.packagesDelivered,
-        ...packagesToDeliver,
-      ];
     }
 
     return newMovements;
@@ -376,6 +391,19 @@ export class Navigation {
   solve(): Output {
     try {
       const movements = this.calculate(this.trains, this.packages, []);
+
+      movements.sort((a, b) => {
+        if (a.train > b.train) {
+          return 1;
+        } else if (a.train < b.train) {
+          return -1;
+        } else if (a.startTime > b.startTime) {
+          return 1;
+        } else if (a.startTime < b.startTime) {
+          return -1;
+        }
+        return 0;
+      });
 
       return movements.map(mv => ({
         W: mv.startTime,
