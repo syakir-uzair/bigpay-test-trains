@@ -198,10 +198,7 @@ export class Navigation {
       (checkpoints.length ? checkpoints[0].distance : destination.distance);
 
     if (destination.cumulativeDistance) {
-      const newPackagesPickedUp: string[] = [
-        // ...train.packagesPickedUp,
-        ...train.packagesToPickUp,
-      ];
+      const newPackagesPickedUp: string[] = [...train.packagesToPickUp];
       if (newPackagesPickedUp.length) {
         // pick up package(s) scheduled in that location
         train.packagesPickedUp = [
@@ -351,13 +348,9 @@ export class Navigation {
       const longestTrainDistance =
         this.getLongestDistanceInMovements(allMovements);
       const numberOfTrains = this.getNumberOfTrains(allMovements);
-      if (longestTrainDistance < minDistance) {
-        minDistance = longestTrainDistance;
-        minTrains = numberOfTrains;
-        bestMovements = [...allMovements];
-      } else if (
-        longestTrainDistance === minDistance &&
-        numberOfTrains < minTrains
+      if (
+        longestTrainDistance < minDistance ||
+        (longestTrainDistance === minDistance && numberOfTrains < minTrains)
       ) {
         minDistance = longestTrainDistance;
         minTrains = numberOfTrains;
