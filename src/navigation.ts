@@ -1,5 +1,13 @@
 import {Graph} from './graph';
-import {Destination, Input, Movement, Output, Package, Train} from './types';
+import {
+  Destination,
+  Input,
+  Job,
+  Movement,
+  Output,
+  Package,
+  Train,
+} from './types';
 
 export class Navigation {
   public graph: Graph = new Graph();
@@ -157,23 +165,26 @@ export class Navigation {
       startTime +
       (checkpoints.length ? checkpoints[0].distance : destination.distance);
 
-    const newPackagesPickedUp: string[] = [
-      ...train.packagesPickedUp,
-      ...train.packagesToPickUp,
-    ];
-    if (newPackagesPickedUp.length) {
-      // pick up package(s) scheduled in that location
-      train.packagesPickedUp = newPackagesPickedUp;
-      train.packagesToPickUp = [];
-
-      for (const packageName of newPackagesPickedUp) {
-        const pack = this.getOrFail<Package>(packageName, packages);
-        pack.toBePickedUpBy = '';
-        pack.pickedUpBy = train.name;
-      }
-    }
-
     if (destination.cumulativeDistance) {
+      const newPackagesPickedUp: string[] = [
+        // ...train.packagesPickedUp,
+        ...train.packagesToPickUp,
+      ];
+      if (newPackagesPickedUp.length) {
+        // pick up package(s) scheduled in that location
+        train.packagesPickedUp = [
+          ...train.packagesPickedUp,
+          ...train.packagesToPickUp,
+        ];
+        train.packagesToPickUp = [];
+
+        for (const packageName of newPackagesPickedUp) {
+          const pack = this.getOrFail<Package>(packageName, packages);
+          pack.toBePickedUpBy = '';
+          pack.pickedUpBy = train.name;
+        }
+      }
+
       newMovements.push({
         startTime,
         endTime,
@@ -244,18 +255,31 @@ export class Navigation {
     return longestDistance;
   }
 
+  getNumberOfTrains(movements: Movement[]): number {
+    const trains = new Set<string>();
+    for (const movement of movements) {
+      if (!trains.has(movement.train)) {
+        trains.add(movement.train);
+      }
+    }
+    return trains.size;
+  }
+
   calculate(
     trains: Map<string, Train>,
     packages: Map<string, Package>,
     movements: Movement[]
   ): Movement[] {
     let minDistance = Infinity;
+    let minTrains = Infinity;
     let bestMovements: Movement[] = movements;
     let totalCombinations = 0;
     const cacheKey = this.getCacheKey(trains, packages);
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey) ?? [];
     }
+
+    const queue: Job[] = [];
 
     for (const [, pack] of packages) {
       if (pack.toBePickedUpBy || pack.pickedUpBy || pack.deliveredBy) {
@@ -264,37 +288,11 @@ export class Navigation {
 
       const capableTrains = this.getCapableTrains(pack, packages, trains);
       for (const train of capableTrains) {
-        const newTrains = this.cloneTrains(trains);
-        const newPackages = this.clonePackages(packages);
-        const newTrain = this.getOrFail<Train>(train.name, newTrains);
-        const newPackage = this.getOrFail<Package>(pack.name, newPackages);
-        const destination = this.graph.getDestination(
-          newTrain.currentLocation,
-          newPackage.from
-        );
-        const newMovements = this.moveTrain(
-          newTrain,
-          destination,
-          newPackages,
-          movements
-        );
-        newTrain.packagesToPickUp = [
-          ...newTrain.packagesToPickUp,
-          newPackage.name,
-        ];
-        newPackage.toBePickedUpBy = newTrain.name;
-        const allMovements = this.calculate(
-          newTrains,
-          newPackages,
-          newMovements
-        );
-        const longestTrainDistance =
-          this.getLongestDistanceInMovements(allMovements);
-        if (longestTrainDistance < minDistance) {
-          minDistance = longestTrainDistance;
-          bestMovements = [...allMovements];
-        }
-        totalCombinations++;
+        queue.push({
+          trainName: train.name,
+          packageName: pack.name,
+          toPickUp: true,
+        });
       }
     }
 
@@ -303,33 +301,54 @@ export class Navigation {
         ...train.packagesToPickUp,
         ...train.packagesPickedUp,
       ]) {
-        const newTrains = this.cloneTrains(trains);
-        const newPackages = this.clonePackages(packages);
-        const newTrain = this.getOrFail<Train>(train.name, newTrains);
-        const newPackage = this.getOrFail<Package>(packageName, newPackages);
-        const destination = this.graph.getDestination(
-          newTrain.currentLocation,
-          newPackage.to
-        );
-        const newMovements = this.moveTrain(
-          newTrain,
-          destination,
-          newPackages,
-          movements
-        );
-        const allMovements = this.calculate(
-          newTrains,
-          newPackages,
-          newMovements
-        );
-        const longestTrainDistance =
-          this.getLongestDistanceInMovements(allMovements);
-        if (longestTrainDistance < minDistance) {
-          minDistance = longestTrainDistance;
-          bestMovements = [...allMovements];
-        }
-        totalCombinations++;
+        queue.push({
+          trainName: train.name,
+          packageName,
+          toPickUp: false,
+        });
       }
+    }
+
+    for (const {trainName, packageName, toPickUp} of queue) {
+      const newTrains = this.cloneTrains(trains);
+      const newPackages = this.clonePackages(packages);
+      const newTrain = this.getOrFail<Train>(trainName, newTrains);
+      const newPackage = this.getOrFail<Package>(packageName, newPackages);
+      const destination = toPickUp
+        ? this.graph.getDestination(newTrain.currentLocation, newPackage.from)
+        : this.graph.getDestination(newTrain.currentLocation, newPackage.to);
+      const newMovements = this.moveTrain(
+        newTrain,
+        destination,
+        newPackages,
+        movements
+      );
+
+      if (toPickUp) {
+        newTrain.packagesToPickUp = [
+          ...newTrain.packagesToPickUp,
+          newPackage.name,
+        ];
+        newPackage.toBePickedUpBy = newTrain.name;
+      }
+
+      const allMovements = this.calculate(newTrains, newPackages, newMovements);
+      const longestTrainDistance =
+        this.getLongestDistanceInMovements(allMovements);
+      const numberOfTrains = this.getNumberOfTrains(allMovements);
+      if (longestTrainDistance < minDistance) {
+        minDistance = longestTrainDistance;
+        minTrains = numberOfTrains;
+        bestMovements = [...allMovements];
+      } else if (
+        longestTrainDistance === minDistance &&
+        numberOfTrains < minTrains
+      ) {
+        minDistance = longestTrainDistance;
+        minTrains = numberOfTrains;
+        bestMovements = [...allMovements];
+      }
+      totalCombinations++;
     }
 
     // If no combinations left, it could mean either:

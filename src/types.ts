@@ -42,6 +42,12 @@ export type Movement = {
   packagesDelivered: string[];
 };
 
+export type Job = {
+  trainName: string;
+  packageName: string;
+  toPickUp: Boolean;
+};
+
 export type Input = {
   edges: {
     from: string;
