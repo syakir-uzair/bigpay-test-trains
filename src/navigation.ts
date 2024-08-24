@@ -58,17 +58,43 @@ export class Navigation {
       return 0;
     });
 
-    const packageTrains: {package: string; train: string}[] = [];
+    const packagesToBePickedUp: {package: string; train: string}[] = [];
+    const packagesPickedUp: {package: string; train: string}[] = [];
+    const packagesDelivered: {package: string; train: string}[] = [];
     for (const [packageName, pack] of packages) {
       if (pack.deliveredBy) {
-        continue;
+        packagesDelivered.push({package: packageName, train: pack.deliveredBy});
       }
-      packageTrains.push({
-        package: packageName,
-        train: pack.toBePickedUpBy || pack.pickedUpBy,
-      });
+      if (pack.pickedUpBy) {
+        packagesPickedUp.push({package: packageName, train: pack.pickedUpBy});
+      }
+      if (pack.toBePickedUpBy) {
+        packagesToBePickedUp.push({
+          package: packageName,
+          train: pack.toBePickedUpBy,
+        });
+      }
     }
-    packageTrains.sort((a, b) => {
+
+    packagesToBePickedUp.sort((a, b) => {
+      if (a.package > b.package) {
+        return 1;
+      } else if (a.package < b.package) {
+        return -1;
+      }
+      return 0;
+    });
+
+    packagesPickedUp.sort((a, b) => {
+      if (a.package > b.package) {
+        return 1;
+      } else if (a.package < b.package) {
+        return -1;
+      }
+      return 0;
+    });
+
+    packagesDelivered.sort((a, b) => {
       if (a.package > b.package) {
         return 1;
       } else if (a.package < b.package) {
@@ -80,10 +106,16 @@ export class Navigation {
     const trainLocationsCacheKey = trainLocations
       .map(item => `${item.train}:${item.location}`)
       .join(',');
-    const packageTrainsCacheKey = packageTrains
+    const packagesToBePickedUpCacheKey = packagesToBePickedUp
       .map(item => `${item.package}:${item.train}`)
       .join(',');
-    return `${trainLocationsCacheKey};${packageTrainsCacheKey}`;
+    const packagesPickedUpCacheKey = packagesPickedUp
+      .map(item => `${item.package}:${item.train}`)
+      .join(',');
+    const packagesDeliveredCacheKey = packagesDelivered
+      .map(item => `${item.package}:${item.train}`)
+      .join(',');
+    return `${trainLocationsCacheKey};${packagesToBePickedUpCacheKey};${packagesPickedUpCacheKey};${packagesDeliveredCacheKey}`;
   }
 
   cloneTrains(trains: Map<string, Train>): Map<string, Train> {

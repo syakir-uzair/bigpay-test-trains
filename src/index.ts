@@ -196,14 +196,12 @@ const testCases: TestCase[] = [
       {W: 80, T: 'Q1', N1: 'H', P1: ['K4'], N2: 'G', P2: ['K1']},
       {W: 100, T: 'Q1', N1: 'G', P1: [], N2: 'B', P2: []},
       {W: 130, T: 'Q1', N1: 'B', P1: [], N2: 'C', P2: []},
-      {W: 230, T: 'Q1', N1: 'C', P1: [], N2: 'F', P2: []},
-      {W: 280, T: 'Q1', N1: 'F', P1: ['K6'], N2: 'E', P2: ['K4']},
-      {W: 300, T: 'Q1', N1: 'E', P1: [], N2: 'D', P2: []},
-      {W: 330, T: 'Q1', N1: 'D', P1: [], N2: 'C', P2: ['K6']},
+      {W: 230, T: 'Q1', N1: 'C', P1: [], N2: 'D', P2: []},
+      {W: 290, T: 'Q1', N1: 'D', P1: [], N2: 'E', P2: ['K4']},
       {W: 0, T: 'Q2', N1: 'C', P1: [], N2: 'D', P2: []},
       {W: 30, T: 'Q2', N1: 'D', P1: [], N2: 'E', P2: []},
       {W: 60, T: 'Q2', N1: 'E', P1: ['K5'], N2: 'F', P2: []},
-      {W: 80, T: 'Q2', N1: 'F', P1: ['K7'], N2: 'C', P2: []},
+      {W: 80, T: 'Q2', N1: 'F', P1: ['K6', 'K7'], N2: 'C', P2: ['K6']},
       {W: 130, T: 'Q2', N1: 'C', P1: [], N2: 'B', P2: []},
       {W: 230, T: 'Q2', N1: 'B', P1: [], N2: 'A', P2: ['K5']},
       {W: 260, T: 'Q2', N1: 'A', P1: [], N2: 'B', P2: []},
@@ -219,10 +217,12 @@ function test() {
     let solution: Output | null = null;
 
     try {
-      console.log(`Running test case ${i} for:`, testCase.title);
+      console.log(`Running test case ${i}: ${testCase.title}`);
+      console.time('Time taken');
       const nav = new Navigation(testCase.input);
       solution = nav.solve();
       assert.deepEqual(solution, testCase.expectedOutput, testCase.title);
+      console.timeEnd('Time taken');
       console.log('Success!');
     } catch (e) {
       console.error('Failed!');

@@ -13,5 +13,5 @@
 ## Solution
 
 1. The graph calculation/navigation is based on Dijkstra's Algorithm with priority queue.
-1. For navigation, it is based on dynamic programming, where all combinations will calculated and calculated state (trains' location and packages picked up by which train) will be cached.
+1. For navigation, it is based on dynamic programming, where all combinations will calculated and calculated state (trains' location and packages picked up / delivered by which train) will be cached.
 1. With the same distance, routes with the least trains will be picked.
