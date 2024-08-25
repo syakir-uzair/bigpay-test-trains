@@ -1,14 +1,22 @@
 # bigpay-test-trains
 
-## Setup
+## Setup (JS)
 
 1. Install nvm https://github.com/nvm-sh/nvm.
 1. Run `nvm i` to install NodeJS.
 1. Run `npm i` to install packages.
 
-## Test
+## Test (JS)
 
 1. Run `npm start` to compile and execute the tests.
+
+## Setup (Rust)
+
+1. Run `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` to install Rust.
+
+## Test (Rust)
+
+1. Run `cargo run` to compile and execute the tests.
 
 ## Solution
 

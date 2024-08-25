@@ -9,7 +9,7 @@
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
-    "start": "node build/src/index.js",
+    "start": "node build/src/js/index.js",
     "prestart": "npm run compile",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
