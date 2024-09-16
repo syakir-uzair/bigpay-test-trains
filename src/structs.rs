@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone)]
 pub struct Route {
     pub to: String,
     pub distance: u64,
