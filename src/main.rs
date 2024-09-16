@@ -1,3 +1,7 @@
+pub mod min_heap;
+pub mod structs;
+
 fn main() {
-    println!("Hello, world!");
+    let x = 4;
+    println!("x is {}", x);
 }
