@@ -88,6 +88,42 @@ impl MinHeap {
     }
 }
 
-pub fn create_mind_heap() -> MinHeap {
+pub fn create_min_heap() -> MinHeap {
     MinHeap { heap: [].to_vec() }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{min_heap::create_min_heap, structs::Route};
+
+    #[test]
+    fn test_min_heap() {
+        let mut min_heap = create_min_heap();
+        min_heap.add(Route {
+            to: "a".to_string(),
+            distance: 1,
+        });
+        min_heap.add(Route {
+            to: "b".to_string(),
+            distance: 5,
+        });
+        min_heap.add(Route {
+            to: "c".to_string(),
+            distance: 2,
+        });
+        let res1 = min_heap.remove();
+        assert!(res1.is_some_and(|route| route.to == "a"));
+        let res2 = min_heap.remove();
+        assert!(res2.is_some_and(|route| route.to == "c"));
+        min_heap.add(Route {
+            to: "d".to_string(),
+            distance: 3,
+        });
+        let res3 = min_heap.remove();
+        assert!(res3.is_some_and(|route| route.to == "d"));
+        let res4 = min_heap.remove();
+        assert!(res4.is_some_and(|route| route.to == "b"));
+        let res5 = min_heap.remove();
+        assert!(res5.is_none());
+    }
 }
