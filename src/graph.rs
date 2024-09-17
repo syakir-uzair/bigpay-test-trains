@@ -49,6 +49,68 @@ impl Graph {
                 .to_vec(),
             );
     }
+    pub fn calculate_neighbour(
+        neighbour: Route,
+        start: String,
+        current: String,
+        current_distance: i32,
+        mut destinations: HashMap<String, Destination>,
+        mut min_heap: MinHeap,
+    ) -> (HashMap<String, Destination>, MinHeap) {
+        let next = neighbour.to.clone();
+        let distance = neighbour.distance;
+
+        let new_cumulative_distance = current_distance + distance;
+        let cumulative_distance: i32;
+        let mut prev_destination: Destination = Destination::new();
+        let mut prev_checkpoints: Vec<Route> = [].to_vec();
+        match destinations.get(&next) {
+            Some(destination) => {
+                cumulative_distance = destination.cumulative_distance;
+            }
+            None => cumulative_distance = i32::MAX,
+        }
+        match destinations.get(&current) {
+            Some(dest) => {
+                prev_destination = dest.clone();
+                prev_checkpoints = prev_destination.checkpoints.clone();
+            }
+            None => {}
+        }
+
+        if new_cumulative_distance < cumulative_distance {
+            let mut checkpoints = [].to_vec();
+            if prev_destination.checkpoints.len() > 0 {
+                checkpoints = prev_checkpoints.clone();
+                checkpoints.push(Route {
+                    to: current.clone(),
+                    distance: current_distance
+                        - prev_checkpoints[prev_checkpoints.len() - 1].distance,
+                })
+            } else if current != start {
+                checkpoints.push(Route {
+                    to: current.clone(),
+                    distance: current_distance,
+                });
+            }
+
+            destinations.insert(
+                next.clone(),
+                Destination {
+                    from: start.clone(),
+                    to: next.clone(),
+                    checkpoints,
+                    distance,
+                    cumulative_distance: new_cumulative_distance,
+                },
+            );
+            min_heap.add(Route {
+                to: next.clone(),
+                distance: new_cumulative_distance,
+            });
+        }
+        return (destinations, min_heap);
+    }
     pub fn dijkstra(&mut self, start: String) -> HashMap<String, Destination> {
         match self.cache.get(&start) {
             Some(destinations) => {
@@ -118,58 +180,14 @@ impl Graph {
             }
 
             for neighbour in neighbours {
-                let next = neighbour.to.clone();
-                let distance = neighbour.distance;
-
-                let new_cumulative_distance = current_distance + distance;
-                let cumulative_distance: i32;
-                let mut prev_destination: Destination = Destination::new();
-                let mut prev_checkpoints: Vec<Route> = [].to_vec();
-                match destinations.get(&next) {
-                    Some(destination) => {
-                        cumulative_distance = destination.cumulative_distance;
-                    }
-                    None => cumulative_distance = i32::MAX,
-                }
-                match destinations.get(&current) {
-                    Some(dest) => {
-                        prev_destination = dest.clone();
-                        prev_checkpoints = prev_destination.checkpoints.clone();
-                    }
-                    None => {}
-                }
-
-                if new_cumulative_distance < cumulative_distance {
-                    let mut checkpoints = [].to_vec();
-                    if prev_destination.checkpoints.len() > 0 {
-                        checkpoints = prev_checkpoints.clone();
-                        checkpoints.push(Route {
-                            to: current.clone(),
-                            distance: current_distance
-                                - prev_checkpoints[prev_checkpoints.len() - 1].distance,
-                        })
-                    } else if current != start {
-                        checkpoints.push(Route {
-                            to: current.clone(),
-                            distance: current_distance,
-                        });
-                    }
-
-                    destinations.insert(
-                        next.clone(),
-                        Destination {
-                            from: start.clone(),
-                            to: next.clone(),
-                            checkpoints,
-                            distance,
-                            cumulative_distance: new_cumulative_distance,
-                        },
-                    );
-                    min_heap.add(Route {
-                        to: next.clone(),
-                        distance: new_cumulative_distance,
-                    });
-                }
+                (destinations, min_heap) = Graph::calculate_neighbour(
+                    neighbour,
+                    start.clone(),
+                    current.clone(),
+                    current_distance,
+                    destinations,
+                    min_heap,
+                );
             }
         }
 
