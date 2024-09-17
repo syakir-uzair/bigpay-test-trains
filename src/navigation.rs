@@ -28,9 +28,9 @@ impl Navigation {
         }
 
         Navigation {
-            graph: graph,
-            trains: trains,
-            packages: HashMap::new(),
+            graph,
+            trains,
+            packages,
             cache: HashMap::new(),
         }
     }

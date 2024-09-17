@@ -15,7 +15,7 @@ impl Train {
             name: name.clone(),
             start: start.clone(),
             current_location: start.clone(),
-            capacity: capacity,
+            capacity,
             total_distance: 0,
             packages_delivered: [].to_vec(),
             packages_to_pick_up: [].to_vec(),

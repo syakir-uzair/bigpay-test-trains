@@ -14,7 +14,7 @@ impl Package {
             name: name.clone(),
             from: from.clone(),
             to: to.clone(),
-            weight: weight,
+            weight,
             to_be_picked_up: "".to_string(),
             picked_up_by: "".to_string(),
             delivered_by: "".to_string(),
