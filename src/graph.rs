@@ -54,9 +54,8 @@ impl Graph {
         start: String,
         current: String,
         current_distance: i32,
-        mut destinations: HashMap<String, Destination>,
-        mut min_heap: MinHeap,
-    ) -> (HashMap<String, Destination>, MinHeap) {
+        destinations: HashMap<String, Destination>,
+    ) -> Option<Destination> {
         let next = neighbour.to.clone();
         let distance = neighbour.distance;
 
@@ -93,23 +92,15 @@ impl Graph {
                     distance: current_distance,
                 });
             }
-
-            destinations.insert(
-                next.clone(),
-                Destination {
-                    from: start.clone(),
-                    to: next.clone(),
-                    checkpoints,
-                    distance,
-                    cumulative_distance: new_cumulative_distance,
-                },
-            );
-            min_heap.add(Route {
+            return Some(Destination {
+                from: start.clone(),
                 to: next.clone(),
-                distance: new_cumulative_distance,
+                checkpoints,
+                distance,
+                cumulative_distance: new_cumulative_distance,
             });
         }
-        return (destinations, min_heap);
+        None
     }
     pub fn dijkstra(&mut self, start: String) -> HashMap<String, Destination> {
         match self.cache.get(&start) {
@@ -180,14 +171,24 @@ impl Graph {
             }
 
             for neighbour in neighbours {
-                (destinations, min_heap) = Graph::calculate_neighbour(
+                let destination_option = Graph::calculate_neighbour(
                     neighbour,
                     start.clone(),
                     current.clone(),
                     current_distance,
-                    destinations,
-                    min_heap,
+                    destinations.clone(),
                 );
+
+                match destination_option {
+                    Some(destination) => {
+                        destinations.insert(destination.to.clone(), destination.clone());
+                        min_heap.add(Route {
+                            to: destination.to.clone(),
+                            distance: destination.cumulative_distance,
+                        });
+                    }
+                    None => {}
+                }
             }
         }
 
