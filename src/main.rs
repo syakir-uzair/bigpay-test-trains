@@ -1,5 +1,6 @@
 pub mod destination;
 pub mod graph;
+pub mod input;
 pub mod min_heap;
 pub mod movement;
 pub mod navigation;
