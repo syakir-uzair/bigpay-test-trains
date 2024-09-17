@@ -1,10 +1,13 @@
-use crate::structs::Route;
+use crate::route::Route;
 
 pub struct MinHeap {
     pub heap: Vec<Route>,
 }
 
 impl MinHeap {
+    pub fn new() -> MinHeap {
+        MinHeap { heap: [].to_vec() }
+    }
     pub fn get_left_child_index(parent_index: i32) -> i32 {
         2 * parent_index + 1
     }
@@ -94,11 +97,11 @@ pub fn create_min_heap() -> MinHeap {
 
 #[cfg(test)]
 mod tests {
-    use crate::{min_heap::create_min_heap, structs::Route};
+    use crate::{min_heap::MinHeap, route::Route};
 
     #[test]
     fn test_min_heap() {
-        let mut min_heap = create_min_heap();
+        let mut min_heap = MinHeap::new();
         min_heap.add(Route {
             to: "a".to_string(),
             distance: 1,
