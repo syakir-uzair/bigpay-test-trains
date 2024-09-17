@@ -1,6 +1,6 @@
 use crate::route::Route;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Destination {
     pub from: String,
     pub to: String,
