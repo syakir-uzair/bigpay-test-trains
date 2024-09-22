@@ -1,4 +1,4 @@
-use std::{collections::HashMap, panic::catch_unwind};
+use std::collections::HashMap;
 
 use crate::{graph::Graph, input::Input, movement::Movement, package::Package, train::Train};
 
@@ -135,6 +135,43 @@ impl Navigation {
             }
         }
 
-        return capable_trains;
+        capable_trains
+    }
+    pub fn get_packages_to_deliver(
+        train: Train,
+        packages: HashMap<String, Package>,
+        to: String,
+    ) -> Vec<String> {
+        let mut packages_to_deliver: Vec<String> = [].to_vec();
+
+        for package_name in train.packages_to_pick_up {
+            match packages.get(&package_name) {
+                Some(package) => {
+                    if package.to == to {
+                        packages_to_deliver.push(package_name);
+                    }
+                }
+                None => {
+                    panic!("package not found");
+                }
+            }
+        }
+
+        for package_name in train.packages_picked_up {
+            match packages.get(&package_name) {
+                Some(package) => {
+                    if package.to == to {
+                        packages_to_deliver.push(package_name);
+                    }
+                }
+                None => {
+                    panic!("package not found");
+                }
+            }
+        }
+
+        // TODO: Package and Train update
+
+        packages_to_deliver
     }
 }
