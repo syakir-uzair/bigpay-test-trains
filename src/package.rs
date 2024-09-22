@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Package {
     pub name: String,
     pub from: String,

@@ -1,3 +1,5 @@
+#[derive(Clone)]
+
 pub struct Train {
     pub name: String,
     pub start: String,

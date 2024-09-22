@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, panic::catch_unwind};
 
 use crate::{graph::Graph, input::Input, movement::Movement, package::Package, train::Train};
 
@@ -107,5 +107,34 @@ impl Navigation {
             packages_picked_up_cache_key,
             packages_delivered_cache_key
         )
+    }
+    pub fn get_capable_trains(
+        pack: Package,
+        packages: HashMap<String, Package>,
+        trains: HashMap<String, Train>,
+    ) -> Vec<Train> {
+        let mut capable_trains: Vec<Train> = [].to_vec();
+        for (_, train) in trains {
+            let mut train_packages = train.packages_to_pick_up.clone();
+            for package_picked_up in train.packages_picked_up.clone() {
+                train_packages.push(package_picked_up);
+            }
+            let packages_total_weight: i32 = train_packages.into_iter().fold(0, |acc, package| {
+                let weight = match packages.get(&package) {
+                    Some(item) => item.weight,
+                    None => {
+                        panic!("Package not found.");
+                    }
+                };
+                acc + weight
+            });
+            let train_capacity_left = train.capacity - packages_total_weight;
+
+            if train_capacity_left >= pack.weight {
+                capable_trains.push(train.clone());
+            }
+        }
+
+        return capable_trains;
     }
 }
