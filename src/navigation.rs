@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{graph::Graph, input::Input, movement::Movement, package::Package, train::Train};
+use crate::{
+    destination::Destination, graph::Graph, input::Input, movement::Movement, package::Package,
+    train::Train,
+};
 
 pub struct Navigation {
     pub graph: Graph,
@@ -148,7 +151,7 @@ impl Navigation {
             match packages.get(&package_name) {
                 Some(package) => {
                     if package.to == to {
-                        packages_to_deliver.push(package_name);
+                        packages_to_deliver.push(package_name.clone());
                     }
                 }
                 None => {
@@ -169,9 +172,101 @@ impl Navigation {
                 }
             }
         }
-
-        // TODO: Package and Train update
-
         packages_to_deliver
+    }
+
+    pub fn move_train(
+        train: Train,
+        destination: Destination,
+        packages: HashMap<String, Package>,
+        movements: Vec<Movement>,
+    ) -> (Vec<Movement>, Vec<String>, Vec<String>) {
+        let checkpoints = destination.checkpoints;
+        let mut new_movements = movements.clone();
+        let mut train_movements: Vec<Movement> = [].to_vec();
+        for movement in new_movements.clone() {
+            if movement.train == train.name {
+                train_movements.push(movement);
+            }
+        }
+
+        let mut start_time = 0;
+        if train_movements.len() > 0 {
+            start_time = train_movements[train_movements.len() - 1].end_time;
+        }
+
+        let mut end_time = start_time + destination.distance;
+        if checkpoints.len() > 0 {
+            end_time = start_time + checkpoints[0].distance;
+        }
+
+        let mut packages_picked_up: Vec<String> = vec![];
+        let mut packages_delivered: Vec<String> = vec![];
+        if destination.cumulative_distance == 0 {
+            return (
+                new_movements.clone(),
+                packages_picked_up.clone(),
+                packages_delivered.clone(),
+            );
+        }
+
+        for package in train.packages_to_pick_up.clone() {
+            packages_picked_up.push(package);
+        }
+
+        let mut to = destination.to;
+        if checkpoints.len() > 0 {
+            to = checkpoints[0].to.clone();
+        }
+
+        let packages_to_deliver =
+            Navigation::get_packages_to_deliver(train.clone(), packages.clone(), to.clone());
+
+        new_movements.push(Movement {
+            start_time,
+            end_time,
+            from: destination.from,
+            to: to.clone(),
+            train: train.name.clone(),
+            packages_picked_up: packages_picked_up.clone(),
+            packages_delivered: packages_to_deliver.clone(),
+        });
+
+        for package in packages_to_deliver.clone() {
+            packages_delivered.push(package);
+        }
+
+        let mut i = 0;
+        let checkpoints_len = checkpoints.len();
+        for checkpoint in checkpoints.clone() {
+            let start_time = end_time;
+            let mut end_time = start_time + destination.distance;
+            if i < checkpoints_len - 1 {
+                end_time = start_time + checkpoints[i + 1].distance;
+            }
+            i += 1;
+
+            let packages_to_deliver =
+                Navigation::get_packages_to_deliver(train.clone(), packages.clone(), to.clone());
+            new_movements.push(Movement {
+                start_time,
+                end_time,
+                train: train.name.clone(),
+                from: checkpoint.to.clone(),
+                to: to.clone(),
+                packages_picked_up: vec![],
+                packages_delivered: packages_to_deliver.clone(),
+            });
+            for package in packages_to_deliver.clone() {
+                packages_delivered.push(package);
+            }
+        }
+
+        // TODO: Package and Train update. Should pass outside
+        return (
+            new_movements.clone(),
+            packages_picked_up.clone(),
+            packages_delivered.clone(),
+        );
     }
 }

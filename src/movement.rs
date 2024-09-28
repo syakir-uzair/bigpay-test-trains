@@ -1,3 +1,5 @@
+#[derive(Clone)]
+
 pub struct Movement {
     pub start_time: i32,
     pub end_time: i32,
