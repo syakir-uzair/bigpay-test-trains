@@ -4,7 +4,7 @@ pub struct Package {
     pub from: String,
     pub to: String,
     pub weight: i32,
-    pub to_be_picked_up: String,
+    pub to_be_picked_up_by: String,
     pub picked_up_by: String,
     pub delivered_by: String,
 }
@@ -16,7 +16,7 @@ impl Package {
             from: from.clone(),
             to: to.clone(),
             weight,
-            to_be_picked_up: "".to_string(),
+            to_be_picked_up_by: "".to_string(),
             picked_up_by: "".to_string(),
             delivered_by: "".to_string(),
         }

@@ -1,11 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    destination::Destination,
-    graph::Graph,
-    input::Input,
-    movement::{self, Movement},
-    package::Package,
+    destination::Destination, graph::Graph, input::Input, movement::Movement, package::Package,
     train::Train,
 };
 
@@ -63,8 +59,9 @@ impl Navigation {
             if pack.picked_up_by != "" {
                 packages_picked_up.push((package_name.clone(), pack.picked_up_by.clone()));
             }
-            if pack.to_be_picked_up != "" {
-                packages_to_be_picked_up.push((package_name.clone(), pack.to_be_picked_up.clone()));
+            if pack.to_be_picked_up_by != "" {
+                packages_to_be_picked_up
+                    .push((package_name.clone(), pack.to_be_picked_up_by.clone()));
             }
         }
         packages_to_be_picked_up.sort_by(|(package_a, _), (package_b, _)| package_a.cmp(package_b));
@@ -273,7 +270,6 @@ impl Navigation {
             packages_delivered.clone(),
         );
     }
-
     pub fn get_longest_distance_in_movements(movements: Vec<Movement>) -> i32 {
         let mut longest_distance = 0;
         for movement in movements.clone() {
@@ -291,5 +287,166 @@ impl Navigation {
             }
         }
         trains.len() as i32
+    }
+    pub fn calculate(
+        &mut self,
+        trains: HashMap<String, Train>,
+        packages: HashMap<String, Package>,
+        movements: Vec<Movement>,
+    ) -> Vec<Movement> {
+        let mut min_distance: i32 = i32::max_value();
+        let mut min_trains: i32 = i32::max_value();
+        let mut best_movements: Vec<Movement> = movements.clone();
+        let cache_key = Navigation::get_cache_key(trains.clone(), packages.clone());
+        match self.cache.get(&cache_key) {
+            Some(movements) => {
+                return movements.clone();
+            }
+            None => {}
+        }
+
+        let mut queue: Vec<(String, String, bool)> = vec![];
+
+        for (_, package) in packages.clone() {
+            if package.to_be_picked_up_by != ""
+                || package.picked_up_by != ""
+                || package.delivered_by != ""
+            {
+                continue;
+            }
+
+            let capable_trains =
+                Navigation::get_capable_trains(package.clone(), packages.clone(), trains.clone());
+            for train in capable_trains.clone() {
+                queue.push((train.name.clone(), package.name.clone(), true));
+            }
+        }
+
+        for (_, train) in trains.clone() {
+            for package_name in train.packages_to_pick_up {
+                queue.push((train.name.clone(), package_name.clone(), false));
+            }
+            for package_name in train.packages_picked_up {
+                queue.push((train.name.clone(), package_name.clone(), false));
+            }
+        }
+
+        for (train_name, package_name, to_pick_up) in queue {
+            let mut new_trains = trains.clone();
+            let mut new_packages = packages.clone();
+            let mut new_train = match new_trains.get(&train_name) {
+                Some(train) => train.clone(),
+                None => panic!("Train not found"),
+            };
+            let mut new_package = match new_packages.get(&package_name) {
+                Some(package) => package.clone(),
+                None => panic!("Package not found"),
+            };
+            let destination = self
+                .graph
+                .get_destination(new_train.current_location.clone(), new_package.to.clone());
+            if to_pick_up {
+                self.graph
+                    .get_destination(new_train.current_location.clone(), new_package.from.clone());
+            }
+
+            let (new_movements, packages_picked_up, packages_delivered) = Navigation::move_train(
+                new_train.clone(),
+                destination.clone(),
+                packages.clone(),
+                movements.clone(),
+            );
+
+            if destination.cumulative_distance > 0 {
+                new_train.current_location = destination.to;
+                new_train.total_distance += destination.cumulative_distance;
+            }
+
+            if to_pick_up {
+                new_train.packages_to_pick_up.push(new_package.name.clone());
+                new_package.to_be_picked_up_by = new_train.name.clone();
+            }
+
+            for package_name in packages_picked_up {
+                new_train.packages_to_pick_up = vec![];
+                new_train.packages_picked_up.push(package_name.clone());
+                if new_package.name == package_name {
+                    new_package.to_be_picked_up_by = "".to_string();
+                    new_package.picked_up_by = new_train.name.clone();
+                } else {
+                    let package = match new_packages.get(&package_name) {
+                        Some(package) => package.clone(),
+                        None => panic!("Package not found"),
+                    };
+
+                    new_packages.insert(
+                        package_name.clone(),
+                        Package {
+                            name: package_name.clone(),
+                            from: package.from.clone(),
+                            to: package.to.clone(),
+                            weight: package.weight,
+                            to_be_picked_up_by: "".to_string(),
+                            picked_up_by: new_train.name.clone(),
+                            delivered_by: package.delivered_by.clone(),
+                        },
+                    );
+                }
+            }
+
+            for package_name in packages_delivered {
+                let mut train_new_packages_picked_up: Vec<String> = vec![];
+                for package_picked_up in new_train.packages_picked_up.clone() {
+                    if package_picked_up != package_name {
+                        train_new_packages_picked_up.push(package_picked_up);
+                    }
+                }
+                new_train.packages_picked_up = train_new_packages_picked_up.clone();
+                new_train.packages_delivered.push(package_name.clone());
+                if new_package.name == package_name {
+                    new_package.picked_up_by = "".to_string();
+                    new_package.delivered_by = new_train.name.clone();
+                } else {
+                    let package = match new_packages.get(&package_name) {
+                        Some(package) => package.clone(),
+                        None => panic!("Package not found"),
+                    };
+
+                    new_packages.insert(
+                        package_name.clone(),
+                        Package {
+                            name: package_name.clone(),
+                            from: package.from.clone(),
+                            to: package.to.clone(),
+                            weight: package.weight,
+                            to_be_picked_up_by: "".to_string(),
+                            picked_up_by: new_train.name.clone(),
+                            delivered_by: package.delivered_by.clone(),
+                        },
+                    );
+                }
+            }
+
+            new_trains.insert(new_train.name.clone(), new_train.clone());
+            new_packages.insert(new_package.name.clone(), new_package.clone());
+
+            let all_movements = self.calculate(
+                new_trains.clone(),
+                new_packages.clone(),
+                new_movements.clone(),
+            );
+            let longest_train_distance =
+                Navigation::get_longest_distance_in_movements(all_movements.clone());
+            let number_of_trains = Navigation::get_number_of_trains(all_movements.clone());
+            if longest_train_distance < min_distance
+                || (longest_train_distance == min_distance && number_of_trains < min_trains)
+            {
+                min_distance = longest_train_distance;
+                min_trains = number_of_trains;
+                best_movements = all_movements.clone();
+            }
+        }
+        self.cache.insert(cache_key.clone(), best_movements.clone());
+        return best_movements;
     }
 }
