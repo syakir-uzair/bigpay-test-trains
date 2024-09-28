@@ -1,7 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
-    destination::Destination, graph::Graph, input::Input, movement::Movement, package::Package,
+    destination::Destination,
+    graph::Graph,
+    input::Input,
+    movement::{self, Movement},
+    package::Package,
     train::Train,
 };
 
@@ -268,5 +272,24 @@ impl Navigation {
             packages_picked_up.clone(),
             packages_delivered.clone(),
         );
+    }
+
+    pub fn get_longest_distance_in_movements(movements: Vec<Movement>) -> i32 {
+        let mut longest_distance = 0;
+        for movement in movements.clone() {
+            if movement.end_time > longest_distance {
+                longest_distance = movement.end_time
+            }
+        }
+        longest_distance
+    }
+    pub fn get_number_of_trains(movements: Vec<Movement>) -> i32 {
+        let mut trains: HashSet<String> = HashSet::new();
+        for movement in movements.clone() {
+            if !trains.contains(&movement.train) {
+                trains.insert(movement.train.clone());
+            }
+        }
+        trains.len() as i32
     }
 }
