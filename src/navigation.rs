@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    i32,
+};
 
 use crate::{
     destination::Destination, graph::Graph, input::Input, movement::Movement, package::Package,
@@ -215,7 +218,7 @@ impl Navigation {
             packages_picked_up.push(package);
         }
 
-        let mut to = destination.to;
+        let mut to = destination.to.clone();
         if checkpoints.len() > 0 {
             to = checkpoints[0].to.clone();
         }
@@ -226,7 +229,7 @@ impl Navigation {
         new_movements.push(Movement {
             start_time,
             end_time,
-            from: destination.from,
+            from: destination.from.clone(),
             to: to.clone(),
             train: train.name.clone(),
             packages_picked_up: packages_picked_up.clone(),
@@ -245,10 +248,15 @@ impl Navigation {
             if i < checkpoints_len - 1 {
                 end_time = start_time + checkpoints[i + 1].distance;
             }
-            i += 1;
+
+            let mut to = destination.to.clone();
+            if i < checkpoints_len - 1 {
+                to = checkpoints[i + 1].to.clone();
+            }
 
             let packages_to_deliver =
                 Navigation::get_packages_to_deliver(train.clone(), packages.clone(), to.clone());
+
             new_movements.push(Movement {
                 start_time,
                 end_time,
@@ -261,9 +269,9 @@ impl Navigation {
             for package in packages_to_deliver.clone() {
                 packages_delivered.push(package);
             }
+            i += 1;
         }
 
-        // TODO: Package and Train update. Should pass outside
         return (
             new_movements.clone(),
             packages_picked_up.clone(),
@@ -294,9 +302,10 @@ impl Navigation {
         packages: HashMap<String, Package>,
         movements: Vec<Movement>,
     ) -> Vec<Movement> {
-        let mut min_distance: i32 = i32::max_value();
-        let mut min_trains: i32 = i32::max_value();
+        let mut min_distance: i32 = i32::MAX;
+        let mut min_trains: i32 = i32::MAX;
         let mut best_movements: Vec<Movement> = movements.clone();
+        let mut total_combinations: i32 = 0;
         let cache_key = Navigation::get_cache_key(trains.clone(), packages.clone());
         match self.cache.get(&cache_key) {
             Some(movements) => {
@@ -342,18 +351,19 @@ impl Navigation {
                 Some(package) => package.clone(),
                 None => panic!("Package not found"),
             };
-            let destination = self
+            let mut destination = self
                 .graph
                 .get_destination(new_train.current_location.clone(), new_package.to.clone());
             if to_pick_up {
-                self.graph
+                destination = self
+                    .graph
                     .get_destination(new_train.current_location.clone(), new_package.from.clone());
             }
 
             let (new_movements, packages_picked_up, packages_delivered) = Navigation::move_train(
                 new_train.clone(),
                 destination.clone(),
-                packages.clone(),
+                new_packages.clone(),
                 movements.clone(),
             );
 
@@ -445,8 +455,84 @@ impl Navigation {
                 min_trains = number_of_trains;
                 best_movements = all_movements.clone();
             }
+            total_combinations += 1;
         }
+
+        // If no combinations left, it could mean either:
+        if total_combinations == 0 {
+            let mut undelivered_packages: Vec<String> = vec![];
+            for (_, package) in packages {
+                if package.delivered_by == "" {
+                    undelivered_packages.push(package.name.clone());
+                }
+            }
+
+            // All packages are delivered
+            if undelivered_packages.len() == 0 {
+                return best_movements;
+            // Or something is wrong
+            } else {
+                panic!("No solution found");
+            }
+        }
+
         self.cache.insert(cache_key.clone(), best_movements.clone());
         return best_movements;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{input::Input, movement::Movement};
+
+    use super::Navigation;
+
+    #[test]
+    fn test_basic_navigation() {
+        let mut navigation = Navigation::new(Input {
+            edges: vec![
+                ("E1".to_string(), "A".to_string(), "B".to_string(), 30),
+                ("E2".to_string(), "B".to_string(), "C".to_string(), 10),
+            ],
+            packages: vec![("K1".to_string(), 5, "A".to_string(), "C".to_string())],
+            trains: vec![("Q1".to_string(), 6, "B".to_string())],
+        });
+        let movements = navigation.calculate(
+            navigation.trains.clone(),
+            navigation.packages.clone(),
+            vec![],
+        );
+        assert_eq!(
+            movements,
+            vec![
+                Movement {
+                    start_time: 0,
+                    end_time: 30,
+                    from: "B".to_string(),
+                    to: "A".to_string(),
+                    train: "Q1".to_string(),
+                    packages_picked_up: vec![],
+                    packages_delivered: vec![],
+                },
+                Movement {
+                    start_time: 30,
+                    end_time: 60,
+                    from: "A".to_string(),
+                    to: "B".to_string(),
+                    train: "Q1".to_string(),
+                    packages_picked_up: vec!["K1".to_string()],
+                    packages_delivered: vec![],
+                },
+                Movement {
+                    start_time: 60,
+                    end_time: 70,
+                    from: "B".to_string(),
+                    to: "C".to_string(),
+                    train: "Q1".to_string(),
+                    packages_picked_up: vec![],
+                    packages_delivered: vec!["K1".to_string()],
+                }
+            ]
+        );
     }
 }
