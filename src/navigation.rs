@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     collections::{HashMap, HashSet},
     i32,
 };
@@ -71,42 +72,29 @@ impl Navigation {
         packages_picked_up.sort_by(|(package_a, _), (package_b, _)| package_a.cmp(package_b));
         packages_delivered.sort_by(|(package_a, _), (package_b, _)| package_a.cmp(package_b));
 
-        let train_locations_cache_key =
-            train_locations
-                .into_iter()
-                .fold(String::new(), |acc, (train, location)| {
-                    if acc == "" {
-                        return format!("{}:{}", train, location);
-                    }
-                    format!("{},{}:{}", acc, train, location)
-                });
-        let packages_to_be_picked_up_cache_key =
-            packages_to_be_picked_up
-                .into_iter()
-                .fold(String::new(), |acc, (package, train)| {
-                    if acc == "" {
-                        return format!("{}:{}", package, train);
-                    }
-                    format!("{},{}:{}", acc, package, train)
-                });
-        let packages_picked_up_cache_key =
-            packages_picked_up
-                .into_iter()
-                .fold(String::new(), |acc, (package, train)| {
-                    if acc == "" {
-                        return format!("{}:{}", package, train);
-                    }
-                    format!("{},{}:{}", acc, package, train)
-                });
-        let packages_delivered_cache_key =
-            packages_delivered
-                .into_iter()
-                .fold(String::new(), |acc, (package, train)| {
-                    if acc == "" {
-                        return format!("{}:{}", package, train);
-                    }
-                    format!("{},{}:{}", acc, package, train)
-                });
+        let train_locations_cache_key = train_locations
+            .into_iter()
+            .fold("train_locations".to_string(), |acc, (train, location)| {
+                format!("{},{}:{}", acc, train, location)
+            });
+        let packages_to_be_picked_up_cache_key = packages_to_be_picked_up.into_iter().fold(
+            "packages_to_be_picked_up".to_string(),
+            |acc, (package, train)| format!("{},{}:{}", acc, package, train),
+        );
+        let packages_picked_up_cache_key = packages_picked_up
+            .into_iter()
+            .fold("packages_picked_up".to_string(), |acc, (package, train)| {
+                format!("{},{}:{}", acc, package, train)
+            });
+        let packages_delivered_cache_key = packages_delivered.into_iter().fold(
+            "packages_delivered".to_string(),
+            |acc, (package, train)| {
+                if acc == "" {
+                    return format!("{}:{}", package, train);
+                }
+                format!("{},{}:{}", acc, package, train)
+            },
+        );
         format!(
             "{};{};{};{}",
             train_locations_cache_key,
@@ -290,9 +278,7 @@ impl Navigation {
     pub fn get_number_of_trains(movements: Vec<Movement>) -> i32 {
         let mut trains: HashSet<String> = HashSet::new();
         for movement in movements.clone() {
-            if !trains.contains(&movement.train) {
-                trains.insert(movement.train.clone());
-            }
+            trains.insert(movement.train.clone());
         }
         trains.len() as i32
     }
@@ -304,14 +290,20 @@ impl Navigation {
     ) -> Vec<Movement> {
         let mut min_distance: i32 = i32::MAX;
         let mut min_trains: i32 = i32::MAX;
-        let mut best_movements: Vec<Movement> = movements.clone();
         let mut total_combinations: i32 = 0;
         let cache_key = Navigation::get_cache_key(trains.clone(), packages.clone());
+        let mut best_movements: Vec<Movement> = movements.clone();
+        let mut cache_found = false;
         match self.cache.get(&cache_key) {
-            Some(movements) => {
-                return movements.clone();
+            Some(cached_movements) => {
+                best_movements = cached_movements.clone();
+                cache_found = true;
             }
             None => {}
+        };
+
+        if cache_found {
+            return best_movements;
         }
 
         let mut queue: Vec<(String, String, bool)> = vec![];
@@ -378,10 +370,17 @@ impl Navigation {
             }
 
             for package_name in packages_picked_up {
-                new_train.packages_to_pick_up = vec![];
+                let mut train_new_packages_to_pick_up: Vec<String> = vec![];
+                for package_to_pick_up in new_train.packages_to_pick_up.clone() {
+                    if package_to_pick_up != package_name {
+                        train_new_packages_to_pick_up.push(package_to_pick_up);
+                    }
+                }
+                new_train.packages_to_pick_up = train_new_packages_to_pick_up.clone();
+                // new_train.packages_to_pick_up = vec![];
                 new_train.packages_picked_up.push(package_name.clone());
                 if new_package.name == package_name {
-                    new_package.to_be_picked_up_by = "".to_string();
+                    // new_package.to_be_picked_up_by = "".to_string();
                     new_package.picked_up_by = new_train.name.clone();
                 } else {
                     let package = match new_packages.get(&package_name) {
@@ -396,9 +395,9 @@ impl Navigation {
                             from: package.from.clone(),
                             to: package.to.clone(),
                             weight: package.weight,
-                            to_be_picked_up_by: "".to_string(),
+                            to_be_picked_up_by: new_train.name.clone(),
                             picked_up_by: new_train.name.clone(),
-                            delivered_by: package.delivered_by.clone(),
+                            delivered_by: "".to_string(),
                         },
                     );
                 }
@@ -414,7 +413,7 @@ impl Navigation {
                 new_train.packages_picked_up = train_new_packages_picked_up.clone();
                 new_train.packages_delivered.push(package_name.clone());
                 if new_package.name == package_name {
-                    new_package.picked_up_by = "".to_string();
+                    // new_package.picked_up_by = "".to_string();
                     new_package.delivered_by = new_train.name.clone();
                 } else {
                     let package = match new_packages.get(&package_name) {
@@ -429,9 +428,9 @@ impl Navigation {
                             from: package.from.clone(),
                             to: package.to.clone(),
                             weight: package.weight,
-                            to_be_picked_up_by: "".to_string(),
+                            to_be_picked_up_by: new_train.name.clone(),
                             picked_up_by: new_train.name.clone(),
-                            delivered_by: package.delivered_by.clone(),
+                            delivered_by: new_train.name.clone(),
                         },
                     );
                 }
@@ -448,6 +447,11 @@ impl Navigation {
             let longest_train_distance =
                 Navigation::get_longest_distance_in_movements(all_movements.clone());
             let number_of_trains = Navigation::get_number_of_trains(all_movements.clone());
+            println!("cache_key={:#?}", cache_key);
+            println!(
+                "min_distance={}, min_longest_train_distance={}, min_train={}, number_of_trains={}",
+                min_distance, longest_train_distance, min_trains, number_of_trains
+            );
             if longest_train_distance < min_distance
                 || (longest_train_distance == min_distance && number_of_trains < min_trains)
             {
@@ -472,10 +476,20 @@ impl Navigation {
                 return best_movements;
             // Or something is wrong
             } else {
+                println!("{:#?}", best_movements);
+                println!("{:#?}", undelivered_packages);
                 panic!("No solution found");
             }
         }
 
+        best_movements.sort_by(|movement_a, movement_b| {
+            let train_cmp = movement_a.train.cmp(&movement_b.train);
+            let start_time_cmp = movement_a.start_time.cmp(&movement_b.start_time);
+            if train_cmp == Ordering::Equal {
+                return start_time_cmp;
+            }
+            return train_cmp;
+        });
         self.cache.insert(cache_key.clone(), best_movements.clone());
         return best_movements;
     }
@@ -535,4 +549,126 @@ mod tests {
             ]
         );
     }
+    #[test]
+    fn test_delivering_package_using_multiple_trains_in_parallel() {
+        let mut navigation = Navigation::new(Input {
+            edges: vec![
+                ("E1".to_string(), "A".to_string(), "X".to_string(), 10),
+                ("E2".to_string(), "B".to_string(), "X".to_string(), 10),
+                ("E3".to_string(), "C".to_string(), "X".to_string(), 10),
+                ("E4".to_string(), "D".to_string(), "X".to_string(), 10),
+                ("E5".to_string(), "E".to_string(), "X".to_string(), 10),
+                ("E6".to_string(), "F".to_string(), "X".to_string(), 10),
+            ],
+            packages: vec![
+                ("K1".to_string(), 5, "X".to_string(), "D".to_string()),
+                ("K2".to_string(), 5, "X".to_string(), "E".to_string()),
+                ("K3".to_string(), 5, "X".to_string(), "F".to_string()),
+            ],
+            trains: vec![
+                ("Q1".to_string(), 15, "A".to_string()),
+                ("Q2".to_string(), 15, "B".to_string()),
+                ("Q3".to_string(), 15, "C".to_string()),
+            ],
+        });
+        let movements = navigation.calculate(
+            navigation.trains.clone(),
+            navigation.packages.clone(),
+            vec![],
+        );
+        assert_eq!(
+            movements,
+            vec![
+                Movement {
+                    start_time: 0,
+                    end_time: 10,
+                    from: "A".to_string(),
+                    to: "X".to_string(),
+                    train: "Q1".to_string(),
+                    packages_picked_up: [].to_vec(),
+                    packages_delivered: [].to_vec(),
+                },
+                Movement {
+                    start_time: 10,
+                    end_time: 20,
+                    from: "X".to_string(),
+                    to: "E".to_string(),
+                    train: "Q1".to_string(),
+                    packages_picked_up: ["K2".to_string()].to_vec(),
+                    packages_delivered: ["K2".to_string()].to_vec(),
+                },
+                Movement {
+                    start_time: 0,
+                    end_time: 10,
+                    from: "B".to_string(),
+                    to: "X".to_string(),
+                    train: "Q2".to_string(),
+                    packages_picked_up: [].to_vec(),
+                    packages_delivered: [].to_vec(),
+                },
+                Movement {
+                    start_time: 10,
+                    end_time: 20,
+                    from: "X".to_string(),
+                    to: "F".to_string(),
+                    train: "Q2".to_string(),
+                    packages_picked_up: ["K3".to_string()].to_vec(),
+                    packages_delivered: ["K3".to_string()].to_vec(),
+                },
+                Movement {
+                    start_time: 0,
+                    end_time: 10,
+                    from: "C".to_string(),
+                    to: "X".to_string(),
+                    train: "Q3".to_string(),
+                    packages_picked_up: [].to_vec(),
+                    packages_delivered: [].to_vec(),
+                },
+                Movement {
+                    start_time: 10,
+                    end_time: 20,
+                    from: "X".to_string(),
+                    to: "D".to_string(),
+                    train: "Q3".to_string(),
+                    packages_picked_up: ["K1".to_string()].to_vec(),
+                    packages_delivered: ["K1".to_string()].to_vec(),
+                },
+            ],
+        );
+    }
+    // #[test]
+    // fn test_delivering_more_packages_using_multiple_trains_in_parallel() {
+    //     let mut navigation = Navigation::new(Input {
+    //         edges: vec![
+    //             ("E1".to_string(), "A".to_string(), "B".to_string(), 30),
+    //             ("E2".to_string(), "B".to_string(), "G".to_string(), 30),
+    //             ("E3".to_string(), "G".to_string(), "H".to_string(), 30),
+    //             ("E4".to_string(), "H".to_string(), "B".to_string(), 30),
+    //             ("E5".to_string(), "B".to_string(), "C".to_string(), 30),
+    //             ("E6".to_string(), "C".to_string(), "D".to_string(), 30),
+    //             ("E7".to_string(), "D".to_string(), "E".to_string(), 30),
+    //             ("E8".to_string(), "C".to_string(), "F".to_string(), 30),
+    //             ("E9".to_string(), "F".to_string(), "E".to_string(), 30),
+    //         ],
+    //         packages: vec![
+    //             ("K1".to_string(), 5, "A".to_string(), "G".to_string()),
+    //             ("K2".to_string(), 5, "A".to_string(), "H".to_string()),
+    //             ("K3".to_string(), 5, "B".to_string(), "H".to_string()),
+    //             ("K4".to_string(), 5, "H".to_string(), "E".to_string()),
+    //             ("K5".to_string(), 5, "E".to_string(), "A".to_string()),
+    //             ("K6".to_string(), 5, "F".to_string(), "C".to_string()),
+    //             ("K7".to_string(), 5, "F".to_string(), "G".to_string()),
+    //         ],
+    //         trains: vec![
+    //             ("Q1".to_string(), 20, "B".to_string()),
+    //             ("Q2".to_string(), 20, "C".to_string()),
+    //         ],
+    //     });
+    //     let movements = navigation.calculate(
+    //         navigation.trains.clone(),
+    //         navigation.packages.clone(),
+    //         vec![],
+    //     );
+    //     assert_eq!(movements, vec![]);
+    // }
 }

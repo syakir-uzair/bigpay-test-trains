@@ -103,14 +103,15 @@ impl Graph {
         None
     }
     pub fn dijkstra(&mut self, start: String) -> HashMap<String, Destination> {
-        match self.cache.get(&start) {
-            Some(destinations) => {
-                return destinations.clone();
-            }
-            None => {}
+        let mut destinations = match self.cache.get(&start) {
+            Some(cached_desttinations) => cached_desttinations.clone(),
+            None => HashMap::new(),
+        };
+
+        if destinations.len() > 0 {
+            return destinations;
         }
 
-        let mut destinations: HashMap<String, Destination> = HashMap::new();
         let mut min_heap = MinHeap::new();
         let mut visited: HashSet<String> = HashSet::new();
 
