@@ -332,6 +332,22 @@ impl Navigation {
             }
         }
 
+        queue.sort_by(
+            |(train_name_a, package_name_a, to_pick_up_a),
+             (train_name_b, package_name_b, to_pick_up_b)| {
+                let train_name_cmp = train_name_a.cmp(train_name_b);
+                let package_name_cmp = package_name_a.cmp(package_name_b);
+                let to_pick_up_cmp = to_pick_up_a.cmp(to_pick_up_b);
+                if to_pick_up_cmp == Ordering::Equal {
+                    if train_name_cmp == Ordering::Equal {
+                        return package_name_cmp;
+                    }
+                    return train_name_cmp;
+                }
+                return to_pick_up_cmp;
+            },
+        );
+
         for (train_name, package_name, to_pick_up) in queue {
             let mut new_trains = trains.clone();
             let mut new_packages = packages.clone();
@@ -592,10 +608,10 @@ mod tests {
                     start_time: 10,
                     end_time: 20,
                     from: "X".to_string(),
-                    to: "E".to_string(),
+                    to: "D".to_string(),
                     train: "Q1".to_string(),
-                    packages_picked_up: ["K2".to_string()].to_vec(),
-                    packages_delivered: ["K2".to_string()].to_vec(),
+                    packages_picked_up: ["K1".to_string()].to_vec(),
+                    packages_delivered: ["K1".to_string()].to_vec(),
                 },
                 Movement {
                     start_time: 0,
@@ -610,10 +626,10 @@ mod tests {
                     start_time: 10,
                     end_time: 20,
                     from: "X".to_string(),
-                    to: "F".to_string(),
+                    to: "E".to_string(),
                     train: "Q2".to_string(),
-                    packages_picked_up: ["K3".to_string()].to_vec(),
-                    packages_delivered: ["K3".to_string()].to_vec(),
+                    packages_picked_up: ["K2".to_string()].to_vec(),
+                    packages_delivered: ["K2".to_string()].to_vec(),
                 },
                 Movement {
                     start_time: 0,
@@ -628,10 +644,10 @@ mod tests {
                     start_time: 10,
                     end_time: 20,
                     from: "X".to_string(),
-                    to: "D".to_string(),
+                    to: "F".to_string(),
                     train: "Q3".to_string(),
-                    packages_picked_up: ["K1".to_string()].to_vec(),
-                    packages_delivered: ["K1".to_string()].to_vec(),
+                    packages_picked_up: ["K3".to_string()].to_vec(),
+                    packages_delivered: ["K3".to_string()].to_vec(),
                 },
             ],
         );
